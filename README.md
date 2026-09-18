@@ -80,7 +80,8 @@ java -jar backend/bootstrap/target/gastos.jar
 ```
 
 **La aplicación no arranca sin `JWT_SECRET`**, y es intencionado: una clave de firma
-por defecto en el código es una clave pública. Genera una y expórtala:
+por defecto en el código es una clave pública. Genera una y expórtala (esto y el resto de
+la puesta en marcha, en el [manual de operación](docs/OPERACION.md)):
 
 ```bash
 export JWT_SECRET=$(openssl rand -base64 48)
@@ -92,6 +93,7 @@ pruebas.
 
 ## Documentación
 
+- [Manual de operación](docs/OPERACION.md) — puesta en marcha, secretos, cuentas y sesiones
 - [Arquitectura](docs/ARCHITECTURE.md)
 - [Inventario de la API](docs/API.md)
 - [ADR-0001 — Monolito modular frente a microservicios](docs/adr/ADR-0001-monolito-modular-vs-microservicios.md)
