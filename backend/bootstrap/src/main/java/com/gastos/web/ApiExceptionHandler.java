@@ -27,7 +27,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  *   <li><strong>404</strong>: el recurso no existe <em>o no es de este hogar</em>. Los
  *       dos casos responden igual para no permitir enumerar identificadores ajenos.</li>
  *   <li><strong>422</strong>: la peticion es valida pero una regla de negocio la
- *       rechaza (IBAN con digito de control incorrecto, cargo en descubierto).</li>
+ *       rechaza (cuenta conjunta con un solo titular, cargo en descubierto).</li>
  *   <li><strong>500</strong>: cualquier otra cosa. El detalle se queda en el log del
  *       servidor; al cliente solo le llega un mensaje generico.</li>
  * </ul>

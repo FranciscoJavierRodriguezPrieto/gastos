@@ -33,7 +33,6 @@ public class ManageAccountsUseCase {
                 command.householdId(),
                 command.alias(),
                 command.bankName(),
-                command.iban(),
                 command.type(),
                 command.ownership(),
                 command.holders(),

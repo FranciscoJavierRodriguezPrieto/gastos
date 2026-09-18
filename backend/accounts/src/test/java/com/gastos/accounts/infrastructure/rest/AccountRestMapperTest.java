@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.gastos.accounts.application.OpenAccountCommand;
 import com.gastos.accounts.domain.model.Account;
 import com.gastos.accounts.domain.model.AccountType;
-import com.gastos.accounts.domain.model.Iban;
 import com.gastos.accounts.domain.model.Ownership;
 import com.gastos.accounts.infrastructure.rest.dto.AccountRequest;
 import com.gastos.accounts.infrastructure.rest.dto.AccountResponse;
@@ -25,12 +24,11 @@ class AccountRestMapperTest {
 
     private static final HouseholdId HOUSEHOLD = HouseholdId.newId();
     private static final UserId HOLDER = UserId.newId();
-    private static final String VALID_IBAN = "ES9121000418450200051332";
 
     @Test
     @DisplayName("convierte el DTO de entrada a tipos de dominio")
     void mapsRequestToCommand() {
-        AccountRequest request = new AccountRequest("Cuenta nomina", "Banco Ejemplo", VALID_IBAN,
+        AccountRequest request = new AccountRequest("Cuenta nomina", "Banco Ejemplo",
                 "corriente", "individual", Set.of(HOLDER.value()), new BigDecimal("2210.00"));
 
         OpenAccountCommand command = AccountRestMapper.toCommand(HOUSEHOLD, request);
@@ -42,51 +40,40 @@ class AccountRestMapperTest {
     }
 
     @Test
-    @DisplayName("acepta el IBAN con espacios y lo normaliza")
-    void normalizesIbanWithSpaces() {
-        AccountRequest request = new AccountRequest("Ahorro", "Banco Ejemplo",
-                "ES91 2100 0418 4502 0005 1332", "ahorro", "individual",
-                Set.of(HOLDER.value()), BigDecimal.ZERO);
-
-        assertThat(AccountRestMapper.toCommand(HOUSEHOLD, request).iban())
-                .isEqualTo(new Iban(VALID_IBAN));
-    }
-
-    @Test
-    @DisplayName("rechaza un IBAN con digito de control incorrecto")
-    void rejectsInvalidIban() {
-        AccountRequest request = new AccountRequest("Cuenta", "Banco Ejemplo",
-                "ES9921000418450200051332", "corriente", "individual",
-                Set.of(HOLDER.value()), BigDecimal.ZERO);
-
-        assertThatThrownBy(() -> AccountRestMapper.toCommand(HOUSEHOLD, request))
-                .isInstanceOf(DomainException.class)
-                .hasMessageContaining("digito de control");
-    }
-
-    @Test
-    @DisplayName("la respuesta nunca contiene el IBAN completo")
-    void responseNeverExposesFullIban() {
+    @DisplayName("la respuesta lleva solo los campos declarados, sin el hogar")
+    void responseExposesOnlyDeclaredFields() {
         Account account = Account.open(HOUSEHOLD, "Cuenta nomina", "Banco Ejemplo",
-                new Iban(VALID_IBAN), AccountType.CORRIENTE, Ownership.INDIVIDUAL,
-                Set.of(HOLDER), Money.euros("2210.00"), Instant.parse("2026-03-01T10:00:00Z"));
+                AccountType.CORRIENTE, Ownership.INDIVIDUAL, Set.of(HOLDER),
+                Money.euros("2210.00"), Instant.parse("2026-03-01T10:00:00Z"));
 
         AccountResponse response = AccountRestMapper.toResponse(account);
 
-        assertThat(response.maskedIban()).doesNotContain(VALID_IBAN);
-        assertThat(response.maskedIban()).startsWith("ES").endsWith("1332");
+        assertThat(response.alias()).isEqualTo("Cuenta nomina");
+        assertThat(response.bankName()).isEqualTo("Banco Ejemplo");
         assertThat(response.balance()).isEqualByComparingTo("2210.00");
         assertThat(response.holders()).containsExactly(HOLDER.value());
+        assertThat(response.balanceUpdatedAt()).isEqualTo(Instant.parse("2026-03-01T10:00:00Z"));
     }
 
     @Test
     @DisplayName("rechaza un tipo de cuenta desconocido indicando los valores admitidos")
     void rejectsUnknownType() {
-        AccountRequest request = new AccountRequest("Cuenta", "Banco Ejemplo", VALID_IBAN,
+        AccountRequest request = new AccountRequest("Cuenta", "Banco Ejemplo",
                 "hucha", "individual", Set.of(HOLDER.value()), BigDecimal.ZERO);
 
         assertThatThrownBy(() -> AccountRestMapper.toCommand(HOUSEHOLD, request))
                 .isInstanceOf(DomainException.class)
                 .hasMessageContaining("CORRIENTE");
+    }
+
+    @Test
+    @DisplayName("rechaza una titularidad desconocida indicando los valores admitidos")
+    void rejectsUnknownOwnership() {
+        AccountRequest request = new AccountRequest("Cuenta", "Banco Ejemplo",
+                "corriente", "compartida", Set.of(HOLDER.value()), BigDecimal.ZERO);
+
+        assertThatThrownBy(() -> AccountRestMapper.toCommand(HOUSEHOLD, request))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("CONJUNTA");
     }
 }

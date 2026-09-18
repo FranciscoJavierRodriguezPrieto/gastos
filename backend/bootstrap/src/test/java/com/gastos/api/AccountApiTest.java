@@ -23,53 +23,36 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("API de cuentas")
 class AccountApiTest {
 
-    private static final String VALID_IBAN = "ES9121000418450200051332";
-
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static String account(String alias, String iban, String type, String ownership,
-                                  String holder, String balance) {
+    private static String account(String alias, String type, String ownership, String holder,
+                                  String balance) {
         return """
-                {"alias":"%s","bankName":"Banco Ejemplo","iban":"%s","type":"%s",\
+                {"alias":"%s","bankName":"Banco Ejemplo","type":"%s",\
                 "ownership":"%s","holders":["%s"],"initialBalance":%s}"""
-                .formatted(alias, iban, type, ownership, holder, balance);
+                .formatted(alias, type, ownership, holder, balance);
     }
 
     @Test
-    @DisplayName("alta de cuenta: la respuesta solo lleva el IBAN enmascarado")
-    void openAccountMasksIban() throws Exception {
+    @DisplayName("alta de cuenta: la respuesta no filtra el hogar al que pertenece")
+    void openAccountDoesNotLeakHousehold() throws Exception {
         String household = UUID.randomUUID().toString();
 
         String response = mockMvc.perform(post("/api/v1/accounts")
                         .header("X-Household-Id", household)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(account("Cuenta nomina", VALID_IBAN, "CORRIENTE", "INDIVIDUAL",
+                        .content(account("Cuenta nomina", "CORRIENTE", "INDIVIDUAL",
                                 UUID.randomUUID().toString(), "2210.00")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.maskedIban").value(
-                        org.hamcrest.Matchers.endsWith("1332")))
+                .andExpect(jsonPath("$.alias").value("Cuenta nomina"))
+                .andExpect(jsonPath("$.balance").value(2210.00))
                 .andReturn().getResponse().getContentAsString();
 
-        // Ningun campo de la respuesta contiene el IBAN completo.
-        org.assertj.core.api.Assertions.assertThat(response).doesNotContain(VALID_IBAN);
-        org.assertj.core.api.Assertions.assertThat(
-                objectMapper.readTree(response).get("balance").asDouble()).isEqualTo(2210.00);
-    }
-
-    @Test
-    @DisplayName("un IBAN con digito de control incorrecto se rechaza con 422")
-    void invalidIbanIsRejected() throws Exception {
-        mockMvc.perform(post("/api/v1/accounts")
-                        .header("X-Household-Id", UUID.randomUUID().toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(account("Cuenta", "ES9921000418450200051332", "CORRIENTE",
-                                "INDIVIDUAL", UUID.randomUUID().toString(), "0.00")))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("BUSINESS_RULE_VIOLATION"));
+        org.assertj.core.api.Assertions.assertThat(response).doesNotContain(household);
     }
 
     @Test
@@ -78,7 +61,7 @@ class AccountApiTest {
         mockMvc.perform(post("/api/v1/accounts")
                         .header("X-Household-Id", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(account("Cuenta conjunta", VALID_IBAN, "CORRIENTE", "CONJUNTA",
+                        .content(account("Cuenta conjunta", "CORRIENTE", "CONJUNTA",
                                 UUID.randomUUID().toString(), "0.00")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value(
@@ -93,7 +76,7 @@ class AccountApiTest {
         String created = mockMvc.perform(post("/api/v1/accounts")
                         .header("X-Household-Id", household)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(account("Cuenta nomina", VALID_IBAN, "CORRIENTE", "INDIVIDUAL",
+                        .content(account("Cuenta nomina", "CORRIENTE", "INDIVIDUAL",
                                 UUID.randomUUID().toString(), "100.00")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -110,6 +93,26 @@ class AccountApiTest {
     }
 
     @Test
+    @DisplayName("una cuenta de otro hogar responde 404")
+    void otherHouseholdGetsNotFound() throws Exception {
+        String household = UUID.randomUUID().toString();
+
+        String created = mockMvc.perform(post("/api/v1/accounts")
+                        .header("X-Household-Id", household)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(account("Ahorro", "AHORRO", "INDIVIDUAL",
+                                UUID.randomUUID().toString(), "500.00")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = objectMapper.readTree(created).get("id").asText();
+
+        mockMvc.perform(get("/api/v1/accounts/{id}", id)
+                        .header("X-Household-Id", UUID.randomUUID().toString()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("ingreso, conciliacion y saldo total del hogar")
     void balanceOperationsAndTotal() throws Exception {
         String household = UUID.randomUUID().toString();
@@ -117,7 +120,7 @@ class AccountApiTest {
         String created = mockMvc.perform(post("/api/v1/accounts")
                         .header("X-Household-Id", household)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(account("Ahorro", VALID_IBAN, "AHORRO", "INDIVIDUAL",
+                        .content(account("Ahorro", "AHORRO", "INDIVIDUAL",
                                 UUID.randomUUID().toString(), "1000.00")))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

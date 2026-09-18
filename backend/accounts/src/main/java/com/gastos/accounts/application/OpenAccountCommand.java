@@ -1,7 +1,6 @@
 package com.gastos.accounts.application;
 
 import com.gastos.accounts.domain.model.AccountType;
-import com.gastos.accounts.domain.model.Iban;
 import com.gastos.accounts.domain.model.Ownership;
 import com.gastos.shared.domain.HouseholdId;
 import com.gastos.shared.domain.Money;
@@ -12,7 +11,6 @@ import java.util.Set;
 public record OpenAccountCommand(HouseholdId householdId,
                                  String alias,
                                  String bankName,
-                                 Iban iban,
                                  AccountType type,
                                  Ownership ownership,
                                  Set<UserId> holders,

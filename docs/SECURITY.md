@@ -12,8 +12,8 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 | Riesgo | Mitigación | Estado |
 |---|---|---|
 | **A01 Control de acceso roto (BOLA/IDOR)** | Identificadores UUID no enumerables; `HouseholdId` obligatorio en la firma de todos los puertos; doble comprobación en el agregado (`isAccessibleBy`) además de en la consulta. | Implementado en el dominio |
-| **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor; IBAN cifrado a nivel de columna y expuesto sólo enmascarado (`Iban.masked()`). | Enmascarado hecho; cifrado de columna en `feature/persistence-postgresql` |
-| **A03 Inyección** | Sin SQL concatenado: JPA con consultas parametrizadas; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Iban`). | Validación de dominio hecha |
+| **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor. No se almacena ningún dato bancario identificativo, así que no hay nada que cifrar a nivel de columna. | Hecho por diseño ([ADR-0003](adr/ADR-0003-no-almacenar-datos-bancarios.md)) |
+| **A03 Inyección** | Sin SQL concatenado: JPA con consultas parametrizadas; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Money`). | Validación de dominio hecha |
 | **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
 | **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
 | **A06 Componentes vulnerables** | Dependabot y `mvn dependency-check` en CI; BOM de Spring Boot para versiones coherentes. | Pendiente: `chore/deployment-pipeline` |
@@ -42,8 +42,8 @@ cookie), lo que elimina el vector; si en algún momento se usaran cookies, serí
 
 ## Privacidad (RGPD)
 
-- **Minimización:** sólo se almacena lo necesario. El IBAN completo nunca sale del
-  servidor; la UI trabaja con la versión enmascarada.
+- **Minimización:** sólo se almacena lo necesario. No se guarda ningún dato bancario
+  identificativo: la aplicación funciona con alias, banco y saldo introducido a mano.
 - **Sin terceros:** ni analítica, ni trazas externas, ni fuentes remotas. La PWA se
   sirve con todo el contenido propio.
 - **Portabilidad y borrado:** exportación completa en JSON y borrado en cascada del

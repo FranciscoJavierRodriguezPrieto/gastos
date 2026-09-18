@@ -3,7 +3,6 @@ package com.gastos.accounts.infrastructure.rest;
 import com.gastos.accounts.application.OpenAccountCommand;
 import com.gastos.accounts.domain.model.Account;
 import com.gastos.accounts.domain.model.AccountType;
-import com.gastos.accounts.domain.model.Iban;
 import com.gastos.accounts.domain.model.Ownership;
 import com.gastos.accounts.infrastructure.rest.dto.AccountRequest;
 import com.gastos.accounts.infrastructure.rest.dto.AccountResponse;
@@ -33,7 +32,6 @@ public final class AccountRestMapper {
                 householdId,
                 request.alias(),
                 request.bankName(),
-                new Iban(request.iban()),
                 parseType(request.type()),
                 parseOwnership(request.ownership()),
                 holders,
@@ -45,8 +43,6 @@ public final class AccountRestMapper {
                 account.id().value(),
                 account.alias(),
                 account.bankName(),
-                // Nunca account.iban().value(): solo sale la version enmascarada.
-                account.iban().masked(),
                 account.type().name(),
                 account.ownership().name(),
                 account.holders().stream().map(UserId::value).collect(Collectors.toSet()),

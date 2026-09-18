@@ -44,17 +44,20 @@ El riesgo número uno: pedir el recurso de otro cambiando un identificador.
 
 Incluye los antiguos *excessive data exposure* y *mass assignment*.
 
-- **Salida:** DTO de respuesta explícito por recurso. `AccountResponse` sólo tiene
-  `maskedIban`; **no existe un campo con el IBAN completo**, así que no hay forma de
-  filtrarlo por descuido al añadir una pantalla. `ExpenseResponse` no expone
-  `householdId` ni `registeredBy`.
+- **Salida:** DTO de respuesta explícito por recurso, con lista fija de campos. Lo que
+  no esté declarado no puede llegar al cliente por descuido al añadir una pantalla
+  nueva: ni `AccountResponse` ni `ExpenseResponse` exponen `householdId`, y
+  `ExpenseResponse` tampoco `registeredBy`.
+- **Minimización en origen:** la forma más segura de no filtrar un dato es no
+  guardarlo. El IBAN se eliminó del modelo por esa razón (ver
+  [ADR-0003](adr/ADR-0003-no-almacenar-datos-bancarios.md)).
 - **Entrada:** DTO de petición explícito y `fail-on-unknown-properties: true`. Un JSON
   que traiga `id` o `householdId` se rechaza con 400 en vez de ignorarse en silencio.
 - Las operaciones sobre el saldo tienen **DTO propio** (`BalanceOperationRequest`), así
-  que un apunte no puede colar de paso un cambio de IBAN o de titularidad.
+  que un apunte no puede colar de paso un cambio de titularidad o de alias.
 
-**Estado: hecho.** `AccountRestMapperTest.responseNeverExposesFullIban`,
-`AccountApiTest.openAccountMasksIban`, `ExpenseApiTest.unknownFieldIsRejected`.
+**Estado: hecho.** `AccountRestMapperTest.responseExposesOnlyDeclaredFields`,
+`AccountApiTest.openAccountDoesNotLeakHousehold`, `ExpenseApiTest.unknownFieldIsRejected`.
 
 ---
 

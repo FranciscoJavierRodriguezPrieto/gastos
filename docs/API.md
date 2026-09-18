@@ -45,7 +45,8 @@ endpoint olvidado y sin vigilar es exactamente OWASP API9.
 | `PUT` | `/accounts/{id}/balance` | Concilia contra el extracto. |
 | `DELETE` | `/accounts/{id}` | Cierra. `204`. |
 
-El IBAN se envía completo y **se devuelve siempre enmascarado**.
+No se pide el IBAN: los saldos se introducen a mano y no hay integración bancaria, así
+que el alias y el nombre del banco identifican la cuenta de sobra.
 
 ## Hipoteca
 
@@ -87,7 +88,7 @@ Formato único:
 |---|---|
 | `400` | Petición mal formada: falta un campo, el tipo no encaja, falta una cabecera, hay un campo desconocido. |
 | `404` | El recurso no existe **o no es de este hogar**. Los dos casos responden igual a propósito. |
-| `422` | La petición es válida pero una regla de negocio la rechaza (IBAN incorrecto, descubierto, categoría inexistente). |
+| `422` | La petición es válida pero una regla de negocio la rechaza (cuenta conjunta con un solo titular, descubierto, categoría inexistente). |
 | `429` | Límite de peticiones superado. Incluye `Retry-After`. |
 | `500` | Error inesperado. El detalle se queda en el log del servidor. |
 

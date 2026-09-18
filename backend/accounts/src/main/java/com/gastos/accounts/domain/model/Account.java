@@ -20,21 +20,19 @@ public final class Account {
     private final HouseholdId householdId;
     private String alias;
     private final String bankName;
-    private final Iban iban;
     private final AccountType type;
     private final Ownership ownership;
     private final Set<UserId> holders;
     private Money balance;
     private Instant balanceUpdatedAt;
 
-    private Account(AccountId id, HouseholdId householdId, String alias, String bankName, Iban iban,
+    private Account(AccountId id, HouseholdId householdId, String alias, String bankName,
                     AccountType type, Ownership ownership, Set<UserId> holders, Money balance,
                     Instant balanceUpdatedAt) {
         this.id = Guard.notNull(id, "id");
         this.householdId = Guard.notNull(householdId, "householdId");
         this.alias = Guard.notBlank(alias, "alias");
         this.bankName = Guard.notBlank(bankName, "bankName");
-        this.iban = Guard.notNull(iban, "iban");
         this.type = Guard.notNull(type, "type");
         this.ownership = Guard.notNull(ownership, "ownership");
         this.holders = new LinkedHashSet<>(Guard.notEmpty(holders, "holders"));
@@ -43,17 +41,17 @@ public final class Account {
         validateHolders();
     }
 
-    public static Account open(HouseholdId householdId, String alias, String bankName, Iban iban,
+    public static Account open(HouseholdId householdId, String alias, String bankName,
                                AccountType type, Ownership ownership, Set<UserId> holders,
                                Money initialBalance, Instant now) {
-        return new Account(AccountId.newId(), householdId, alias, bankName, iban, type, ownership,
+        return new Account(AccountId.newId(), householdId, alias, bankName, type, ownership,
                 holders, initialBalance, now);
     }
 
     public static Account rehydrate(AccountId id, HouseholdId householdId, String alias, String bankName,
-                                    Iban iban, AccountType type, Ownership ownership, Set<UserId> holders,
+                                    AccountType type, Ownership ownership, Set<UserId> holders,
                                     Money balance, Instant balanceUpdatedAt) {
-        return new Account(id, householdId, alias, bankName, iban, type, ownership, holders, balance,
+        return new Account(id, householdId, alias, bankName, type, ownership, holders, balance,
                 balanceUpdatedAt);
     }
 
@@ -124,10 +122,6 @@ public final class Account {
 
     public String bankName() {
         return bankName;
-    }
-
-    public Iban iban() {
-        return iban;
     }
 
     public AccountType type() {
