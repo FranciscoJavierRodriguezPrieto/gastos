@@ -2,13 +2,14 @@ package com.gastos.mortgage.domain.service;
 
 import com.gastos.mortgage.domain.model.ApplicantProfile;
 import com.gastos.mortgage.domain.model.DebtToIncomeRatio;
+import com.gastos.mortgage.domain.model.FinancingDecision;
+import com.gastos.mortgage.domain.model.FinancingMode;
 import com.gastos.mortgage.domain.model.FinancingPlan;
 import com.gastos.mortgage.domain.model.ViabilityAssessment;
 import com.gastos.mortgage.domain.model.ViabilityVerdict;
 import com.gastos.mortgage.domain.policy.LendingPolicy;
 import com.gastos.shared.domain.Guard;
 import com.gastos.shared.domain.Money;
-import com.gastos.shared.domain.Percentage;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +20,14 @@ import java.util.List;
  * <p>Separado del calculo de la cuota a proposito: la matematica financiera es
  * universal, mientras que los umbrales de riesgo son una decision de negocio que
  * cambiara. Un unico motivo de cambio por clase (SRP).</p>
+ *
+ * <p>El analisis es el mismo se financie con ayuda publica, sin ella o con un LTV
+ * escrito a mano. Lo unico que cambia es el texto de la advertencia cuando se supera el
+ * LTV estandar, porque no es igual depender de un aval concreto que de una cifra que el
+ * usuario ha supuesto.</p>
  */
 public final class ViabilityAnalyzer {
 
-    private static final Percentage STANDARD_LTV_LIMIT = Percentage.of("80.00");
     private static final BigDecimal EMERGENCY_FUND_MONTHS = BigDecimal.valueOf(3);
 
     private final LendingPolicy policy;
@@ -32,10 +37,11 @@ public final class ViabilityAnalyzer {
     }
 
     public ViabilityAssessment analyze(FinancingPlan plan, Money monthlyPayment,
-                                       ApplicantProfile applicant) {
+                                       ApplicantProfile applicant, FinancingDecision financing) {
         Guard.notNull(plan, "plan");
         Guard.notNull(monthlyPayment, "monthlyPayment");
         Guard.notNull(applicant, "applicant");
+        Guard.notNull(financing, "financing");
 
         DebtToIncomeRatio dti = new DebtToIncomeRatio(applicant.netMonthlyIncome(), monthlyPayment,
                 applicant.otherMonthlyDebts());
@@ -68,10 +74,7 @@ public final class ViabilityAnalyzer {
                 warnings.add("DTI total del " + dti.totalRatio() + ", por encima de la zona comoda del "
                         + policy.optimalTotalDti());
             }
-            if (plan.effectiveLoanToValue().isGreaterThan(STANDARD_LTV_LIMIT)) {
-                warnings.add("LTV del " + plan.effectiveLoanToValue()
-                        + ": la operacion depende del aval de Mi Primera Vivienda");
-            }
+            highLoanToValueWarning(plan, financing).ifPresent(warnings::add);
             Money emergencyFund = monthlyPayment.multipliedBy(EMERGENCY_FUND_MONTHS);
             if (plan.savingsBuffer().isLessThan(emergencyFund)) {
                 warnings.add("Tras la firma quedan " + plan.savingsBuffer()
@@ -89,5 +92,27 @@ public final class ViabilityAnalyzer {
         }
 
         return new ViabilityAssessment(verdict, dti, monthlyPayment, blocking, warnings);
+    }
+
+    private java.util.Optional<String> highLoanToValueWarning(FinancingPlan plan,
+                                                              FinancingDecision financing) {
+        if (!plan.effectiveLoanToValue().isGreaterThan(policy.standardLoanToValue())) {
+            return java.util.Optional.empty();
+        }
+        // Se informa del LTV efectivo, no del techo: el techo es lo maximo que dejarian
+        // pedir, y lo que de verdad se pide depende del ahorro que se aporte.
+        String ltv = plan.effectiveLoanToValue().toString();
+        if (financing.usesAidProgram()) {
+            return java.util.Optional.of("LTV efectivo del " + ltv
+                    + ": la operacion depende del aval de '" + financing.appliedProgramName() + "'");
+        }
+        if (financing.mode() == FinancingMode.MANUAL) {
+            return java.util.Optional.of("LTV efectivo del " + ltv + ", por encima del "
+                    + policy.standardLoanToValue() + " estandar. El techo del "
+                    + financing.appliedLoanToValue() + " lo has fijado a mano: confirma con la "
+                    + "entidad que financia ese porcentaje");
+        }
+        return java.util.Optional.of("LTV efectivo del " + ltv + ", por encima del "
+                + policy.standardLoanToValue() + " que concede la banca sin ayuda publica");
     }
 }

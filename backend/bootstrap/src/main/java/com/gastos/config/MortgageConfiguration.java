@@ -1,7 +1,6 @@
 package com.gastos.config;
 
 import com.gastos.mortgage.domain.policy.LendingPolicy;
-import com.gastos.mortgage.domain.policy.MiPrimeraViviendaPolicy;
 import com.gastos.mortgage.domain.policy.PurchaseCostsPolicy;
 import com.gastos.mortgage.domain.service.MortgageSimulator;
 import java.time.Clock;
@@ -29,19 +28,13 @@ public class MortgageConfiguration {
     }
 
     @Bean
-    public MiPrimeraViviendaPolicy miPrimeraViviendaPolicy() {
-        return MiPrimeraViviendaPolicy.defaults();
-    }
-
-    @Bean
     public LendingPolicy lendingPolicy() {
         return LendingPolicy.spanishStandard();
     }
 
     @Bean
     public MortgageSimulator mortgageSimulator(PurchaseCostsPolicy purchaseCostsPolicy,
-                                               MiPrimeraViviendaPolicy programPolicy,
                                                LendingPolicy lendingPolicy) {
-        return new MortgageSimulator(purchaseCostsPolicy, programPolicy, lendingPolicy);
+        return new MortgageSimulator(purchaseCostsPolicy, lendingPolicy);
     }
 }

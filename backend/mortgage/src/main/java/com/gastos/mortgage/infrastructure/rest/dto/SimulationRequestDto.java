@@ -1,5 +1,6 @@
 package com.gastos.mortgage.infrastructure.rest.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -7,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Entrada del simulador. Cada campo corresponde a un control de la herramienta de
@@ -66,5 +68,39 @@ public record SimulationRequestDto(
         Integer applicantAge,
 
         @NotNull(message = "Indique si es la primera vivienda")
-        Boolean firstHome) {
+        Boolean firstHome,
+
+        /**
+         * AUTOMATICO, PROGRAMA o MANUAL. Si se omite se asume AUTOMATICO, que es lo que
+         * espera quien solo mueve los deslizadores sin tocar la financiacion.
+         */
+        String financingMode,
+
+        /** Obligatorio en modo PROGRAMA. */
+        UUID programId,
+
+        @DecimalMin(value = "0.01", message = "El LTV manual debe ser mayor que cero")
+        @DecimalMax(value = "100.00", message = "El LTV manual no puede superar el 100%")
+        @Digits(integer = 3, fraction = 2, message = "El LTV admite como maximo dos decimales")
+        BigDecimal manualLoanToValue) {
+
+    /**
+     * Coherencia entre el modo y sus datos.
+     *
+     * <p>El dominio ya rechaza estas combinaciones, pero comprobarlas aqui convierte un
+     * 422 generico en un 400 que senala el campo exacto que falta.</p>
+     */
+    @AssertTrue(message = "financingMode: el modo PROGRAMA exige indicar programId")
+    public boolean isProgramIdPresentWhenRequired() {
+        return !"PROGRAMA".equalsIgnoreCase(trimmedMode()) || programId != null;
+    }
+
+    @AssertTrue(message = "financingMode: el modo MANUAL exige indicar manualLoanToValue")
+    public boolean isManualLoanToValuePresentWhenRequired() {
+        return !"MANUAL".equalsIgnoreCase(trimmedMode()) || manualLoanToValue != null;
+    }
+
+    private String trimmedMode() {
+        return financingMode == null ? "" : financingMode.trim();
+    }
 }

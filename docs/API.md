@@ -53,15 +53,42 @@ que el alias y el nombre del banco identifican la cuenta de sobra.
 | Método | Ruta | Descripción |
 |---|---|---|
 | `POST` | `/mortgage/simulations` | Simulación efímera. No persiste nada. Es la que mueven los deslizadores. |
+| `GET` | `/mortgage/programs` | Programas de ayuda del hogar. |
+| `POST` | `/mortgage/programs` | Alta de programa. `201` + `Location`. |
+| `GET` | `/mortgage/programs/{id}` | Un programa. |
+| `PUT` | `/mortgage/programs/{id}` | Modifica LTV, límites, requisitos y estado. |
+| `DELETE` | `/mortgage/programs/{id}` | Borra. `204`. |
+| `POST` | `/mortgage/programs/reference-catalog` | Instala el catálogo de partida. Idempotente. |
 | `GET` | `/mortgage/scenarios` | Escenarios guardados, cada uno recalculado. |
 | `POST` | `/mortgage/scenarios` | Guarda un escenario. `201` + `Location`. |
 | `GET` | `/mortgage/scenarios/{id}` | Entrada guardada + resultado recalculado con las políticas vigentes. |
 | `PUT` | `/mortgage/scenarios/{id}` | Actualiza nombre y parámetros. |
 | `DELETE` | `/mortgage/scenarios/{id}` | Borra. `204`. |
 
-La simulación es `POST` aunque no modifique nada: son nueve parámetros económicos del
-hogar y en la query string acabarían en los registros de acceso y en el historial del
-navegador.
+La simulación es `POST` aunque no modifique nada: son una docena de parámetros
+económicos del hogar y en la query string acabarían en los registros de acceso y en el
+historial del navegador. Exige `X-Household-Id` porque el catálogo de programas se
+configura por hogar.
+
+### Modos de financiación
+
+`financingMode` decide de dónde sale el LTV máximo. Si se omite se asume `AUTOMATICO`.
+
+| Modo | Campos extra | Comportamiento |
+|---|---|---|
+| `AUTOMATICO` | — | Aplica el programa activo que más financie de entre los que se cumplan. Sin programas, el 80% estándar. |
+| `PROGRAMA` | `programId` | Aplica ese programa. Si no se cumple, explica qué falta y aplica el 80%. |
+| `MANUAL` | `manualLoanToValue` | Usa ese LTV sin comprobar ningún requisito. |
+
+**El cálculo de cuota, DTI y veredicto es idéntico en los tres modos.** Un programa sólo
+decide cuánto presta el banco.
+
+La respuesta incluye `financingDecision` con el LTV aplicado, el programa usado (si
+alguno), las notas que lo explican y el estado de **cada** programa del catálogo frente
+a ese escenario, con los requisitos concretos que incumple.
+
+En los programas, `maxPropertyPrice` y `maxApplicantAge` ausentes significan "sin
+límite".
 
 ## Operación
 
@@ -97,5 +124,13 @@ Formato único:
 ```bash
 curl -X POST http://localhost:8080/api/v1/mortgage/simulations \
   -H 'Content-Type: application/json' \
-  -d '{"propertyPrice":280000,"availableSavings":50000,"targetReserve":5000,"annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":4500,"otherMonthlyDebts":225,"applicantAge":32,"firstHome":true}'
+  -H 'X-Household-Id: 11111111-1111-1111-1111-111111111111' \
+  -d '{"propertyPrice":280000,"availableSavings":50000,"targetReserve":5000,"annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":4500,"otherMonthlyDebts":225,"applicantAge":32,"firstHome":true,"financingMode":"AUTOMATICO"}'
+```
+
+Instalar el catálogo de partida y volver a simular:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/mortgage/programs/reference-catalog \
+  -H 'X-Household-Id: 11111111-1111-1111-1111-111111111111'
 ```

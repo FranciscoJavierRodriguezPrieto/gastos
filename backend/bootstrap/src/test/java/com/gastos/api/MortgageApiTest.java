@@ -45,20 +45,24 @@ class MortgageApiTest {
     @DisplayName("la simulacion devuelve cuota, gastos, financiacion y veredicto")
     void simulationReturnsEveryBlock() throws Exception {
         mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .header("X-Household-Id", HOUSEHOLD)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(simulation(200_000, 70_000, 6_000, "3.00", 30, 4_000, 225, 32)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.monthlyPayment").exists())
                 .andExpect(jsonPath("$.upfrontCosts.total").value(20000.00))
+                // El ahorro cubre de sobra la entrada minima, asi que el prestamo lo fija
+                // el ahorro aportado y no el LTV maximo.
                 .andExpect(jsonPath("$.financing.loanAmount").value(156000.00))
-                .andExpect(jsonPath("$.viability.verdict").value("OPTIMA"))
-                .andExpect(jsonPath("$.viability.warnings").isEmpty());
+                .andExpect(jsonPath("$.financingDecision.appliedLoanToValue").value(80.00))
+                .andExpect(jsonPath("$.viability.verdict").value("OPTIMA"));
     }
 
     @Test
     @DisplayName("el escenario del 10% de gastos no cubierto sale INVIABLE con su motivo")
     void insufficientSavingsIsReported() throws Exception {
         mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .header("X-Household-Id", HOUSEHOLD)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(simulation(280_000, 10_000, 0, "1.78", 20, 3_400, 225, 32)))
                 .andExpect(status().isOk())
@@ -71,12 +75,54 @@ class MortgageApiTest {
     @DisplayName("un plazo fuera de rango se rechaza con 400 antes de llegar al dominio")
     void outOfRangeTermIsRejected() throws Exception {
         mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .header("X-Household-Id", HOUSEHOLD)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(simulation(200_000, 70_000, 6_000, "3.00", 45, 4_000, 225, 32)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.details[0]").value(
                         org.hamcrest.Matchers.containsString("termYears")));
+    }
+
+    @Test
+    @DisplayName("sin la cabecera de hogar la simulacion es 400: el catalogo depende del hogar")
+    void simulationRequiresHousehold() throws Exception {
+        mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(simulation(200_000, 70_000, 6_000, "3.00", 30, 4_000, 225, 32)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("el modo MANUAL exige indicar el LTV y lo dice senalando el campo")
+    void manualModeWithoutLoanToValueIsRejected() throws Exception {
+        String payload = """
+                {"propertyPrice":200000,"availableSavings":70000,"targetReserve":6000,                "annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":4000,                "otherMonthlyDebts":225,"applicantAge":32,"firstHome":true,                "financingMode":"MANUAL"}""";
+
+        mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .header("X-Household-Id", HOUSEHOLD)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.details[0]").value(
+                        org.hamcrest.Matchers.containsString("manualLoanToValue")));
+    }
+
+    @Test
+    @DisplayName("el modo MANUAL aplica el LTV escrito sin comprobar ningun requisito")
+    void manualModeAppliesGivenLoanToValue() throws Exception {
+        String payload = """
+                {"propertyPrice":280000,"availableSavings":50000,"targetReserve":5000,                "annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":5500,                "otherMonthlyDebts":225,"applicantAge":52,"firstHome":false,                "financingMode":"MANUAL","manualLoanToValue":100.00}""";
+
+        mockMvc.perform(post("/api/v1/mortgage/simulations")
+                        .header("X-Household-Id", HOUSEHOLD)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.financingDecision.mode").value("MANUAL"))
+                .andExpect(jsonPath("$.financingDecision.appliedLoanToValue").value(100.00))
+                .andExpect(jsonPath("$.financingDecision.appliedProgramId").doesNotExist());
     }
 
     @Test

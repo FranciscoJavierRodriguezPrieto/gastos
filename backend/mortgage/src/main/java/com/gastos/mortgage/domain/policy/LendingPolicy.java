@@ -14,12 +14,15 @@ import com.gastos.shared.domain.Percentage;
  * @param optimalTotalDti   DTI total por debajo del cual la operacion es holgada
  * @param maxTotalDti       DTI total maximo admisible
  * @param minResidualIncome renta disponible minima tras pagar todas las cuotas
+ * @param standardLoanToValue LTV que concede la banca sin ayuda publica; es el suelo
+ *                            sobre el que un programa tiene que mejorar para aplicarse
  */
 public record LendingPolicy(Percentage optimalHousingDti,
                             Percentage maxHousingDti,
                             Percentage optimalTotalDti,
                             Percentage maxTotalDti,
-                            Money minResidualIncome) {
+                            Money minResidualIncome,
+                            Percentage standardLoanToValue) {
 
     public LendingPolicy {
         Guard.notNull(optimalHousingDti, "optimalHousingDti");
@@ -27,12 +30,13 @@ public record LendingPolicy(Percentage optimalHousingDti,
         Guard.notNull(optimalTotalDti, "optimalTotalDti");
         Guard.notNull(maxTotalDti, "maxTotalDti");
         Guard.notNull(minResidualIncome, "minResidualIncome");
+        Guard.notNull(standardLoanToValue, "standardLoanToValue");
     }
 
     /**
      * Criterio de referencia: 30% de DTI vivienda y 40% de DTI total como techos,
-     * con 25% y 35% como zona comoda, y 1.000 EUR de renta disponible minima para un
-     * hogar de dos personas.
+     * con 25% y 35% como zona comoda, 1.000 EUR de renta disponible minima para un
+     * hogar de dos personas, y el clasico 80% de LTV sin ayuda publica.
      */
     public static LendingPolicy spanishStandard() {
         return new LendingPolicy(
@@ -40,6 +44,7 @@ public record LendingPolicy(Percentage optimalHousingDti,
                 Percentage.of("30.00"),
                 Percentage.of("35.00"),
                 Percentage.of("40.00"),
-                Money.euros(1_000));
+                Money.euros(1_000),
+                Percentage.of("80.00"));
     }
 }

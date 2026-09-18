@@ -72,8 +72,8 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | 1 | `feature/architecture-setup` | Integrada | Estructura, modelo de dominio, motor de hipoteca, tests, ADR. |
 | 2 | `feature/rest-api` | **Actual** | API REST completa, DTOs, mappers, CRUD, manejo de errores, bastionado OWASP API. |
 | 3 | `refactor/quitar-iban` | Integrada | Se elimina el IBAN: dato personal sin funcion en el producto (ADR-0003). |
-| 4 | `refactor/mortgage-programas-configurables` | Siguiente | Programas de ayuda como datos + modos de financiación (automático / programa / manual). |
-| 5 | `feature/persistence-postgresql` | Pendiente | Adaptadores JPA, Flyway, cifrado de columnas sensibles. Sustituye a los repositorios en memoria. |
+| 4 | `refactor/mortgage-programas-configurables` | **Actual** | Programas de ayuda como datos + modos de financiación (automático / programa / manual). |
+| 5 | `feature/persistence-postgresql` | Siguiente | Adaptadores JPA, Flyway, cifrado de columnas sensibles. Sustituye a los repositorios en memoria. |
 | 6 | `feature/security-jwt-passkeys` | Pendiente | Spring Security, JWT/Passkeys. **Bloquea cualquier despliegue público.** |
 | 7 | `feature/pwa-shell` | Pendiente | PWA: manifest, service worker, tokens de diseño, instalable en iOS. |
 | 8 | `feature/dashboard-ui` | Pendiente | Resumen, gráficos de distribución, KPI de superávit. |
