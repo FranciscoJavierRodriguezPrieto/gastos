@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: gastos
+  main:
+    banner-mode: off
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  # No revelar el servidor de aplicaciones en las cabeceras (CCN-STIC-812: minimizar
+  # la informacion que se ofrece a un atacante).
+  server-header:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  shutdown: graceful
+
+# Superficie de gestion reducida al minimo: solo health y sin detalle para anonimos.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.gastos: INFO
+
+gastos:
+  mortgage:
+    # Parametros de negocio externalizados: cambian por normativa, no por codigo.
+    # Verificar contra la convocatoria vigente publicada por la Comunidad de Madrid.
+    purchase-costs:
+      transfer-tax-rate: 6.00
+      ancillary-costs-rate: 4.00
+    mi-primera-vivienda:
+      max-loan-to-value: 95.00
+      max-property-price: 390000
+      max-applicant-age: 35
+    lending:
+      optimal-housing-dti: 25.00
+      max-housing-dti: 30.00
+      optimal-total-dti: 35.00
+      max-total-dti: 40.00
+      min-residual-income: 1000
