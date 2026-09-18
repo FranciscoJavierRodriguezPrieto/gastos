@@ -2,6 +2,10 @@
 #
 #   docker compose -f infra/docker-compose.yml up --build
 #
+# Para levantar solo la base de datos y ejecutar la API desde el IDE o desde el JAR:
+#
+#   docker compose -f infra/docker-compose.yml up -d db
+#
 # Las credenciales de este fichero son SOLO para desarrollo local. En cualquier entorno
 # accesible desde red se inyectan por variable de entorno y nunca se versionan.
 
@@ -14,7 +18,7 @@ services:
       POSTGRES_USER: gastos
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
     ports:
-      - "127.0.0.1:5432:5432"   # sólo loopback: la BD no se expone a la red local
+      - "127.0.0.1:5432:5432"   # solo loopback: la BD no se expone a la red local
     volumes:
       - gastos-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -28,14 +32,16 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     container_name: gastos-api
+    # Espera a que la base de datos acepte conexiones: Flyway migra al arrancar y sin
+    # esto la API moriria en el primer intento.
     depends_on:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gastos
       SPRING_DATASOURCE_USERNAME: gastos
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
     ports:
       - "127.0.0.1:8080:8080"
     restart: unless-stopped
