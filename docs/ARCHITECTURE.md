@@ -35,9 +35,20 @@ com.gastos.<contexto>
 │   ├── port       → interfaces que el dominio necesita (repositorios, servicios)
 │   ├── policy     → parámetros de negocio configurables (tipos, umbrales)
 │   └── service    → servicios de dominio sin estado (cálculos)
-├── application    → casos de uso; orquestan, no calculan
-└── infrastructure → adaptadores (JPA, REST, seguridad)  [ramas posteriores]
+├── application
+│   ├── *UseCase   → casos de uso; orquestan, no calculan
+│   └── *Command   → órdenes en tipos de dominio, independientes del contrato HTTP
+└── infrastructure
+    ├── rest       → controladores y mappers
+    │   └── dto    → contrato HTTP: records inmutables con validación
+    └── persistence→ adaptadores de almacenamiento
 ```
+
+**La traducción vive en un solo sitio.** El flujo completo de una petición es
+`DTO → mapper → command → caso de uso → dominio`, y de vuelta `dominio → mapper → DTO`.
+El dominio no conoce los DTO y los DTO no conocen el dominio; el mapper es el único que
+ve ambos lados, así que cuando un campo sale mal en la API se sabe exactamente en qué
+fichero mirar.
 
 **Regla de dependencia:** siempre hacia dentro. `infrastructure → application → domain`.
 El dominio no conoce a nadie. Esto no es una convención de estilo: está verificado en
@@ -48,6 +59,9 @@ El dominio no conoce a nadie. Esto no es una convención de estilo: está verifi
 | Regla | Motivo |
 |---|---|
 | `domain` no depende de `org.springframework` | el núcleo financiero se testea sin framework |
+| `application` no depende de `org.springframework` | los casos de uso se instancian a mano en la raíz de composición |
+| `domain` ni `application` dependen de `..rest..` | el contrato HTTP no condiciona al modelo |
+| los DTO de `..rest.dto..` son records | un DTO mutable invita a reutilizarlo como modelo |
 | `domain` no depende de `jakarta.persistence` | el modelo no queda atado al esquema de BD |
 | `domain` no depende de `application` ni de `infrastructure` | las dependencias apuntan hacia dentro |
 | `application` no depende de `infrastructure` | los casos de uso hablan con puertos |

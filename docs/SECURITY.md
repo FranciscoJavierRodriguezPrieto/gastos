@@ -3,6 +3,10 @@
 Documento vivo. Marca lo que ya está implementado y lo que queda comprometido para
 ramas posteriores, para que la deuda de seguridad sea visible en vez de implícita.
 
+> El **OWASP API Security Top 10 (2023)**, que es el catálogo específico de APIs y el
+> que más aplica a este proyecto, tiene su propio documento con el estado riesgo por
+> riesgo: [OWASP-API-SECURITY.md](OWASP-API-SECURITY.md).
+
 ## OWASP Top 10 — mitigaciones
 
 | Riesgo | Mitigación | Estado |
