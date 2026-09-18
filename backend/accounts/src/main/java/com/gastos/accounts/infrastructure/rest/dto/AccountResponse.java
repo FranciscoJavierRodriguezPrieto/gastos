@@ -8,15 +8,13 @@ import java.util.UUID;
 /**
  * Representacion de salida de una cuenta.
  *
- * <p>{@code maskedIban} es deliberadamente la unica vista del IBAN que cruza la
- * frontera: no existe ningun campo con el valor completo, asi que no hay forma de
- * filtrarlo por descuido al anadir una pantalla nueva (OWASP API3, exposicion
- * excesiva de datos).</p>
+ * <p>Lista fija y explicita de campos: lo que no este aqui no puede llegar al cliente
+ * por descuido al anadir una pantalla nueva (OWASP API3, exposicion excesiva de datos).
+ * En particular no se expone {@code householdId}.</p>
  */
 public record AccountResponse(UUID id,
                               String alias,
                               String bankName,
-                              String maskedIban,
                               String type,
                               String ownership,
                               Set<UUID> holders,

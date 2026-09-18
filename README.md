@@ -7,7 +7,7 @@ Madrid.
 ## Estado actual
 
 Rama `feature/rest-api`: dominio, motor de cálculo hipotecario y **API REST completa**
-(gastos, cuentas e hipoteca) con DTOs, mappers y bastionado OWASP API. 88 tests en verde,
+(gastos, cuentas e hipoteca) con DTOs, mappers y bastionado OWASP API. 87 tests en verde,
 incluidos 9 de arquitectura.
 
 Todavía **no hay persistencia real** (los datos viven en memoria y se pierden al
@@ -73,6 +73,7 @@ docker compose -f infra/docker-compose.yml up --build
 - [Inventario de la API](docs/API.md)
 - [ADR-0001 — Monolito modular frente a microservicios](docs/adr/ADR-0001-monolito-modular-vs-microservicios.md)
 - [ADR-0002 — Plataforma de despliegue gratuita](docs/adr/ADR-0002-plataforma-de-despliegue.md)
+- [ADR-0003 — No almacenar datos bancarios identificativos](docs/adr/ADR-0003-no-almacenar-datos-bancarios.md)
 - [Flujo de trabajo Git](docs/GIT_WORKFLOW.md)
 - [Seguridad y cumplimiento](docs/SECURITY.md)
 - [OWASP API Security Top 10 (2023)](docs/OWASP-API-SECURITY.md)
