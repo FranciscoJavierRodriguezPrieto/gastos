@@ -3,6 +3,38 @@ spring:
     name: gastos
   main:
     banner-mode: off
+
+  datasource:
+    # Sin valores por defecto embebidos: la conexion se inyecta por entorno y las
+    # credenciales nunca viven en el repositorio.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/gastos}
+    username: ${SPRING_DATASOURCE_USERNAME:gastos}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      # Una instancia gratuita no aguanta un pool grande, y con dos usuarios no hace falta.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 10000
+
+  jpa:
+    # El esquema lo gobierna Flyway; Hibernate solo comprueba que las entidades encajan.
+    # Si alguna vez divergen, la aplicacion no arranca, que es exactamente lo que se
+    # quiere: mejor un fallo al desplegar que una columna silenciosamente ignorada.
+    hibernate:
+      ddl-auto: validate
+    # Cerrar la sesion al salir del servicio: sin esto, una entidad perezosa se cargaria
+    # al serializar la respuesta y las consultas aparecerian fuera de toda transaccion.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Fallar si alguien edita una migracion ya aplicada, en vez de callar.
+    validate-on-migrate: true
   jackson:
     default-property-inclusion: non_null
     deserialization:

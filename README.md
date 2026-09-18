@@ -6,13 +6,12 @@ Madrid.
 
 ## Estado actual
 
-Rama `refactor/mortgage-programas-configurables`: dominio, motor de cálculo hipotecario
-con programas de ayuda configurables, y **API REST completa** (gastos, cuentas e
-hipoteca) con DTOs, mappers y bastionado OWASP API. 113 tests en verde, incluidos 9 de
-arquitectura.
+Rama `feature/persistence-postgresql`: dominio, motor de cálculo hipotecario con
+programas de ayuda configurables, **API REST completa** (gastos, cuentas e hipoteca) y
+**persistencia en PostgreSQL** con migraciones Flyway. 121 tests en verde, incluidos 9
+de arquitectura.
 
-Todavía **no hay persistencia real** (los datos viven en memoria y se pierden al
-reiniciar) ni **autenticación**: la identidad viaja en una cabecera sin firmar, así que
+Todavía **no hay autenticación**: la identidad viaja en una cabecera sin firmar, así que
 la API no debe salir de la red local. El plan de ramas está en
 [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
@@ -57,6 +56,18 @@ gastos/
 
 ## Arrancar en local
 
+Todo en Docker (API + base de datos):
+
+```bash
+docker compose -f infra/docker-compose.yml up --build
+```
+
+Solo la base de datos, y la API desde el JAR o el IDE:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d db
+```
+
 ```bash
 mvn clean verify
 ```
@@ -65,9 +76,8 @@ mvn clean verify
 java -jar backend/bootstrap/target/gastos.jar
 ```
 
-```bash
-docker compose -f infra/docker-compose.yml up --build
-```
+Los tests no necesitan Docker: usan H2 en modo de compatibilidad PostgreSQL con las
+mismas migraciones de Flyway que se despliegan.
 
 ## Documentación
 

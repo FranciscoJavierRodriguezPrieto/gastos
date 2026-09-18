@@ -13,7 +13,7 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 |---|---|---|
 | **A01 Control de acceso roto (BOLA/IDOR)** | Identificadores UUID no enumerables; `HouseholdId` obligatorio en la firma de todos los puertos; doble comprobación en el agregado (`isAccessibleBy`) además de en la consulta. | Implementado en el dominio |
 | **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor. No se almacena ningún dato bancario identificativo, así que no hay nada que cifrar a nivel de columna. | Hecho por diseño ([ADR-0003](adr/ADR-0003-no-almacenar-datos-bancarios.md)) |
-| **A03 Inyección** | Sin SQL concatenado: JPA con consultas parametrizadas; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Money`). | Validación de dominio hecha |
+| **A03 Inyección** | Sin SQL concatenado: Spring Data JPA con consultas derivadas y parámetros ligados; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Money`). | Validación de dominio hecha |
 | **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
 | **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
 | **A06 Componentes vulnerables** | Dependabot y `mvn dependency-check` en CI; BOM de Spring Boot para versiones coherentes. | Pendiente: `chore/deployment-pipeline` |

@@ -39,9 +39,9 @@ com.gastos.<contexto>
 │   ├── *UseCase   → casos de uso; orquestan, no calculan
 │   └── *Command   → órdenes en tipos de dominio, independientes del contrato HTTP
 └── infrastructure
-    ├── rest       → controladores y mappers
-    │   └── dto    → contrato HTTP: records inmutables con validación
-    └── persistence→ adaptadores de almacenamiento
+    ├── rest            → controladores y mappers
+    │   └── dto         → contrato HTTP: records inmutables con validación
+    └── persistence/jpa → entidades, mappers y adaptadores de los puertos
 ```
 
 **La traducción vive en un solo sitio.** El flujo completo de una petición es
@@ -88,8 +88,18 @@ guarda el `SimulationRequest`. Los tipos y las políticas cambian, así que el r
 se recalcula siempre con el motor vigente.
 
 **El aislamiento por hogar está en la firma de los puertos.** Todo método de repositorio
-exige `HouseholdId`. El aislamiento multi-tenant no depende de que el programador de
-turno recuerde añadir el filtro.
+exige `HouseholdId`, y las consultas de Spring Data también (`findByIdAndHouseholdId`).
+El aislamiento multi-tenant no depende de que el programador de turno recuerde añadir el
+filtro.
+
+**Las entidades JPA no son el modelo.** `AccountEntity` es una fila; `Account` es el
+agregado. JPA necesita constructor vacío y setters, que es justo lo que un agregado no
+debe ofrecer, así que se mantienen separados y un mapper traduce. Cuesta una clase por
+agregado y a cambio el esquema de la base de datos no dicta las invariantes de negocio.
+
+**El esquema lo gobierna Flyway, no Hibernate.** `ddl-auto: validate`: si una entidad y
+el esquema divergen, la aplicación no arranca. Mejor un fallo al desplegar que una
+columna ignorada en silencio.
 
 ## Flujo del motor de hipoteca
 

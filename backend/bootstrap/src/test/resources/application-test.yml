@@ -1,0 +1,28 @@
+# Perfil de test: H2 en modo de compatibilidad PostgreSQL.
+#
+# Las migraciones de Flyway son las MISMAS que en produccion, no un esquema generado por
+# Hibernate. Asi cada ejecucion de los tests valida tambien el SQL que se va a desplegar,
+# y una migracion rota se detecta en el build y no en el despliegue.
+#
+# H2 no es PostgreSQL, asi que el esquema se mantiene en SQL estandar a proposito: uuid,
+# numeric, varchar, timestamp, boolean y date. Nada de jsonb ni de tipos propietarios.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:gastos;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+gastos:
+  rate-limit:
+    enabled: false
