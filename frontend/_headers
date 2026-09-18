@@ -1,0 +1,32 @@
+# Cabeceras para Cloudflare Pages.
+#
+# La API tiene las suyas (SecurityHeadersFilter); estas son las del cliente, que es donde
+# de verdad importa la CSP: es lo único que se interpone entre un XSS y el token de
+# refresco guardado en localStorage.
+
+/*
+  # Nada de terceros. Sin 'unsafe-inline' ni 'unsafe-eval': el código es todo propio y
+  # en módulos, así que no hace falta ninguna de las dos.
+  #
+  # OJO AL DESPLEGAR: connect-src tiene que apuntar al dominio real de la API. Con el
+  # valor de desarrollo, la aplicación desplegada no podrá hablar con el servidor.
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8080; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# El armazón lo cachea el service worker, así que el navegador debe revalidar siempre:
+# si no, una versión vieja podría quedarse pegada tras un despliegue.
+/index.html
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache
+
+/src/*
+  Cache-Control: no-cache
+
+/icons/*
+  Cache-Control: public, max-age=604800

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover deja que el contenido llegue bajo la barra de estado del
+       iPhone; los safe-area-inset del CSS se encargan de que nada quede tapado. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gastos</title>
+  <meta name="description" content="Gestion financiera del hogar: gastos, cuentas e hipoteca.">
+
+  <!-- El tema es claro y se declara explicitamente para que iOS no invierta la paleta. -->
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#b4c59d">
+
+  <!-- Safari ignora buena parte del manifiesto, asi que la instalacion en iOS necesita
+       ademas estas etiquetas. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Gastos">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png">
+
+  <link rel="stylesheet" href="/src/styles/tokens.css">
+  <link rel="stylesheet" href="/src/styles/app.css">
+</head>
+<body data-estado="cargando">
+  <!-- Enlace de salto: primer tabulador de la pagina, para no obligar a recorrer toda la
+       navegacion con el teclado. -->
+  <a class="salto" href="#contenido">Ir al contenido</a>
+
+  <div id="app" class="app">
+    <p class="estado estado--cargando">Cargando...</p>
+  </div>
+
+  <noscript>
+    <p class="estado estado--error">
+      Esta aplicacion necesita JavaScript para funcionar.
+    </p>
+  </noscript>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

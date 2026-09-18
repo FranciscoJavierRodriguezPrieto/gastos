@@ -15,6 +15,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -58,6 +59,9 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http, RateLimitProperties rateLimit,
                                            Clock clock) throws Exception {
         http
+                // Sin esto la cadena de seguridad ignora la configuracion CORS y
+                // rechaza con 401 el sondeo previo del navegador, que llega sin token.
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
