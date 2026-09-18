@@ -3,8 +3,10 @@ package com.gastos.mortgage.infrastructure.rest;
 import com.gastos.mortgage.application.ManageAidProgramsUseCase;
 import com.gastos.mortgage.infrastructure.rest.dto.AidProgramRequest;
 import com.gastos.mortgage.infrastructure.rest.dto.AidProgramResponse;
+import com.gastos.shared.domain.AuthenticatedUser;
 import com.gastos.shared.domain.HouseholdId;
 import com.gastos.shared.domain.Percentage;
+import com.gastos.shared.web.CurrentUser;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -16,7 +18,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,25 +38,25 @@ public class AidProgramController {
     }
 
     @GetMapping
-    public List<AidProgramResponse> list(@RequestHeader("X-Household-Id") UUID householdId) {
-        return AidProgramRestMapper.toResponses(useCase.list(new HouseholdId(householdId)));
+    public List<AidProgramResponse> list(@CurrentUser AuthenticatedUser user) {
+        return AidProgramRestMapper.toResponses(useCase.list(user.householdId()));
     }
 
     @GetMapping("/{id}")
     public AidProgramResponse findById(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
-        return AidProgramRestMapper.toResponse(useCase.findById(new HouseholdId(householdId), id));
+        return AidProgramRestMapper.toResponse(useCase.findById(user.householdId(), id));
     }
 
     @PostMapping
     public ResponseEntity<AidProgramResponse> create(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody AidProgramRequest request) {
 
         AidProgramResponse response = AidProgramRestMapper.toResponse(useCase.create(
-                new HouseholdId(householdId),
+                user.householdId(),
                 request.name(),
                 Percentage.of(request.maxLoanToValue()),
                 AidProgramRestMapper.toOptionalMoney(request.maxPropertyPrice()),
@@ -70,12 +71,12 @@ public class AidProgramController {
 
     @PutMapping("/{id}")
     public AidProgramResponse update(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody AidProgramRequest request) {
 
         return AidProgramRestMapper.toResponse(useCase.update(
-                new HouseholdId(householdId),
+                user.householdId(),
                 id,
                 request.name(),
                 Percentage.of(request.maxLoanToValue()),
@@ -88,10 +89,10 @@ public class AidProgramController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
-        useCase.delete(new HouseholdId(householdId), id);
+        useCase.delete(user.householdId(), id);
         return ResponseEntity.noContent().build();
     }
 
@@ -103,9 +104,9 @@ public class AidProgramController {
      */
     @PostMapping("/reference-catalog")
     public List<AidProgramResponse> installReferenceCatalog(
-            @RequestHeader("X-Household-Id") UUID householdId) {
+            @CurrentUser AuthenticatedUser user) {
 
         return AidProgramRestMapper.toResponses(
-                useCase.installReferenceCatalog(new HouseholdId(householdId)));
+                useCase.installReferenceCatalog(user.householdId()));
     }
 }

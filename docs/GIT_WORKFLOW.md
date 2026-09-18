@@ -70,13 +70,14 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | Orden | Rama | Estado | Contenido |
 |---|---|---|---|
 | 1 | `feature/architecture-setup` | Integrada | Estructura, modelo de dominio, motor de hipoteca, tests, ADR. |
-| 2 | `feature/rest-api` | **Actual** | API REST completa, DTOs, mappers, CRUD, manejo de errores, bastionado OWASP API. |
-| 3 | `refactor/quitar-iban` | Integrada | Se elimina el IBAN: dato personal sin funcion en el producto (ADR-0003). |
+| 2 | `feature/rest-api` | Integrada | API REST completa, DTOs, mappers, CRUD, manejo de errores, bastionado OWASP API. |
+| 3 | `refactor/quitar-iban` | Integrada | Se elimina el IBAN: dato personal sin función en el producto (ADR-0003). |
 | 4 | `refactor/mortgage-programas-configurables` | Integrada | Programas de ayuda como datos + modos de financiación (automático / programa / manual). |
-| 5 | `feature/persistence-postgresql` | **Actual** | Adaptadores JPA, Flyway y Docker Compose. Sustituye a los repositorios en memoria. |
-| 6 | `feature/security-jwt-passkeys` | Siguiente | Spring Security, JWT/Passkeys. **Bloquea cualquier despliegue público.** |
-| 7 | `feature/pwa-shell` | Pendiente | PWA: manifest, service worker, tokens de diseño, instalable en iOS. |
+| 5 | `feature/persistence-postgresql` | Integrada | Adaptadores JPA, Flyway y Docker Compose. Sustituye a los repositorios en memoria. |
+| 6 | `feature/security-jwt` | **Actual** | Spring Security, JWT con refresco rotatorio, usuarios en base de datos. Cierra OWASP API2. |
+| 7 | `feature/pwa-shell` | Siguiente | PWA: manifest, service worker, pantalla de login y gestión del token. |
 | 8 | `feature/dashboard-ui` | Pendiente | Resumen, gráficos de distribución, KPI de superávit. |
 | 9 | `feature/expenses-ui` y `feature/accounts-ui` | Pendiente | Pantallas de gastos y cuentas. |
 | 10 | `feature/mortgage-ui` | Pendiente | Herramienta de hipoteca con simulación en tiempo real. |
-| 11 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
+| 11 | `feature/passkeys` | Pendiente | WebAuthn como alternativa a la contraseña. Encaja encima de JWT sin rehacer nada. |
+| 12 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |

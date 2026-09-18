@@ -29,14 +29,22 @@ El riesgo número uno: pedir el recurso de otro cambiando un identificador.
 
 ### API2:2023 — Broken Authentication
 
-- **Pendiente.** Hoy la identidad llega por las cabeceras `X-Household-Id` y
-  `X-User-Id`, que es un andamio de desarrollo: **cualquiera que invente una cabecera
-  es cualquier hogar**.
-- Comprometido para `feature/security-jwt-passkeys`: JWT de vida corta con refresh
-  rotatorio o Passkeys (WebAuthn), sin registro abierto (alta por invitación del
-  `OWNER`).
+- **JWT firmado (HS256) de 15 minutos** para el acceso, y token de refresco **opaco,
+  rotatorio y revocable** de 30 días. Detalle y razones en
+  [ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md).
+- **Reutilizar un token de refresco revoca toda la sesión**: un token ya consumido que
+  reaparece sólo se explica porque alguien lo copió.
+- **Contraseñas con BCrypt coste 12** y mínimo 12 caracteres. Sólo se guarda el hash, y
+  en una tabla aparte de los usuarios.
+- **Mismo error para todo fallo de login**, y se calcula un hash de descarte cuando el
+  correo no existe: ni el cuerpo ni el tiempo de respuesta delatan qué cuentas hay.
+- **Sin registro abierto**: el alta inicial sólo funciona mientras no exista ningún
+  hogar; después, sólo el `OWNER` da de alta al otro conviviente.
+- **La clave de firma no tiene valor por defecto**: sin `JWT_SECRET` la aplicación no
+  arranca.
 
-**Estado: pendiente. La API no debe salir de la red local hasta cerrarlo.**
+**Estado: hecho.** `AuthApiTest` (11 tests: rotación, reutilización, cierre de sesión,
+registro cerrado, credenciales indistinguibles), `MortgageApiTest.tamperedTokenIsRejected`.
 
 ---
 
@@ -72,8 +80,9 @@ el proceso sin mala intención, y en una instancia gratuita de 512 MB eso es una
   de 50 hilos.
 - **Rangos de cordura en los DTO** (precio máximo, plazo 5–40 años, tipo ≤ 25%): una
   petición absurda se rechaza antes de consumir CPU.
-- La clave del limitador **no confía en `X-Forwarded-For`**, que el cliente controla y
-  podría rotar para esquivar el límite.
+- La clave del limitador es **el sujeto del token**, no una cabecera: una cabecera la
+  controla el cliente y bastaría rotarla para esquivar el límite. Por eso el filtro se
+  registra *dentro* de la cadena de seguridad y después de autenticar.
 
 **Estado: hecho.** `ApiHardeningTest.rateLimitReturns429`.
 *Limitación conocida:* el contador es en memoria y por instancia. Con más de un nodo
@@ -83,14 +92,13 @@ haría falta un contador compartido.
 
 ### API5:2023 — Broken Function Level Authorization
 
-- La API no tiene operaciones de administración: los dos usuarios del hogar tienen los
-  mismos privilegios sobre los datos compartidos.
-- El único privilegio diferenciado es `Role.OWNER` (invitar y revocar al otro miembro),
-  hoy sólo modelado en el dominio.
-- **Pendiente:** la comprobación a nivel HTTP llega con Spring Security en
-  `feature/security-jwt-passkeys`.
+- Criterio de la cadena de seguridad: **todo exige token salvo una lista blanca corta y
+  explícita**. Un endpoint nuevo queda protegido por omisión.
+- Los dos usuarios del hogar tienen los mismos privilegios sobre los datos compartidos.
+  El único privilegio diferenciado es `Role.OWNER`, que es quien puede dar de alta al
+  otro conviviente, y se comprueba en el caso de uso: un `MEMBER` recibe 403.
 
-**Estado: parcial.**
+**Estado: hecho.** `AuthApiTest.onlyOwnerCanAddMembers`.
 
 ---
 
@@ -159,16 +167,23 @@ sus respuestas con el mismo rigor que las del usuario.
 | Riesgo | Estado |
 |---|---|
 | API1 BOLA | Hecho |
-| API2 Autenticación | **Pendiente** (`feature/security-jwt-passkeys`) |
+| API2 Autenticación | Hecho (Passkeys pendiente, ver abajo) |
 | API3 Propiedades del objeto | Hecho |
 | API4 Consumo de recursos | Hecho (contador por instancia) |
-| API5 Autorización de función | Parcial (dominio sí, HTTP pendiente) |
+| API5 Autorización de función | Hecho |
 | API6 Flujos de negocio | Hecho |
 | API7 SSRF | No aplica |
 | API8 Configuración | Hecho |
 | API9 Inventario | Hecho |
 | API10 Consumo de APIs | No aplica |
 
-**Lo único que bloquea un despliegue público es API2.** Mientras la identidad viaje en
-una cabecera sin firmar, todo lo demás es irrelevante: basta con inventarse un
-`X-Household-Id` para ser otro hogar.
+**Ya no queda ningún riesgo bloqueante para un despliegue público.** La identidad va
+firmada y verificada, y el aislamiento por hogar deja de ser una convención.
+
+Antes de exponer la instancia a internet quedan dos cosas de operación, no de código:
+servir siempre bajo **TLS** (sin él, el token viaja en claro) y generar un `JWT_SECRET`
+aleatorio y distinto del de desarrollo.
+
+**Passkeys (WebAuthn) queda fuera a propósito**, como rama aparte: tiene su propio ciclo
+de registro de credenciales y recuperación, y entregarlo a medias sería peor que no
+entregarlo.

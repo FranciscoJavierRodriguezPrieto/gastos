@@ -7,8 +7,9 @@ import com.gastos.expenses.domain.model.Recurrence;
 import com.gastos.expenses.infrastructure.rest.dto.ExpenseRequest;
 import com.gastos.expenses.infrastructure.rest.dto.ExpenseResponse;
 import com.gastos.expenses.infrastructure.rest.dto.MonthlySummaryResponse;
+import com.gastos.shared.domain.AuthenticatedUser;
 import com.gastos.shared.domain.HouseholdId;
-import com.gastos.shared.domain.UserId;
+import com.gastos.shared.web.CurrentUser;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.YearMonth;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,11 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
  * traduce el resultado. Si alguna vez aparece un {@code if} de negocio aqui, esta en el
  * sitio equivocado.</p>
  *
- * <p><strong>Provisional:</strong> la identidad llega por las cabeceras
- * {@code X-Household-Id} y {@code X-User-Id}. Es un andamio hasta
- * {@code feature/security-jwt-passkeys}, donde el hogar y el usuario se leeran del
- * token y estas cabeceras dejaran de existir. Hasta entonces la API no debe exponerse
- * fuera de la red local: cualquiera que invente una cabecera es cualquier hogar.</p>
+ * <p>La identidad llega ya verificada en {@code AuthenticatedUser}, extraida del token
+ * de acceso. El controlador no lee cabeceras ni claims: recibe quien pregunta y no tiene
+ * forma de saltarse la comprobacion.</p>
  */
 @RestController
 @RequestMapping("/api/v1/expenses")
@@ -54,59 +52,58 @@ public class ExpenseController {
 
     @PostMapping
     public ResponseEntity<ExpenseResponse> register(
-            @RequestHeader("X-Household-Id") UUID householdId,
-            @RequestHeader("X-User-Id") UUID userId,
+            @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody ExpenseRequest request) {
 
         ExpenseResponse response = ExpenseRestMapper.toResponse(useCase.register(
-                ExpenseRestMapper.toCommand(new HouseholdId(householdId), new UserId(userId), request)));
+                ExpenseRestMapper.toCommand(user.householdId(), user.userId(), request)));
 
         return ResponseEntity.created(URI.create("/api/v1/expenses/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<ExpenseResponse> listByMonth(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
 
         return ExpenseRestMapper.toResponses(
-                useCase.listByMonth(new HouseholdId(householdId), month));
+                useCase.listByMonth(user.householdId(), month));
     }
 
     @GetMapping("/summary")
     public MonthlySummaryResponse summary(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
 
-        return ExpenseRestMapper.toSummary(useCase.summarize(new HouseholdId(householdId), month));
+        return ExpenseRestMapper.toSummary(useCase.summarize(user.householdId(), month));
     }
 
     @GetMapping("/{id}")
     public ExpenseResponse findById(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
         return ExpenseRestMapper.toResponse(
-                useCase.findById(new HouseholdId(householdId), new ExpenseId(id)));
+                useCase.findById(user.householdId(), new ExpenseId(id)));
     }
 
     @PutMapping("/{id}")
     public ExpenseResponse update(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody ExpenseRequest request) {
 
         return ExpenseRestMapper.toResponse(useCase.update(
-                new HouseholdId(householdId), new ExpenseId(id),
+                user.householdId(), new ExpenseId(id),
                 ExpenseRestMapper.toUpdateCommand(request)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
-        useCase.delete(new HouseholdId(householdId), new ExpenseId(id));
+        useCase.delete(user.householdId(), new ExpenseId(id));
         return ResponseEntity.noContent().build();
     }
 

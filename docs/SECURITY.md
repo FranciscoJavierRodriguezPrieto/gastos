@@ -17,7 +17,7 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 | **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
 | **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
 | **A06 Componentes vulnerables** | Dependabot y `mvn dependency-check` en CI; BOM de Spring Boot para versiones coherentes. | Pendiente: `chore/deployment-pipeline` |
-| **A07 Fallos de identificación y autenticación** | JWT de vida corta con refresh rotatorio, o Passkeys (WebAuthn) para dos usuarios; sin registro abierto: alta por invitación del `OWNER`. | Pendiente: `feature/security-jwt-passkeys` |
+| **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md)); Passkeys en rama aparte |
 | **A08 Fallos de integridad** | Dependencias con versión fijada; imágenes Docker por digest; CI que verifica el build. | Parcial |
 | **A09 Fallos de registro y monitorización** | `DomainException` con mensajes de negocio, sin datos personales en las trazas; logs estructurados con identificador de correlación. | Parcial |
 | **A10 SSRF** | La aplicación no realiza peticiones salientes a URLs controladas por el usuario. | No aplica |
@@ -51,7 +51,11 @@ cookie), lo que elimina el vector; si en algún momento se usaran cookies, serí
 
 ## Pendiente explícito
 
-Esta rama entrega el núcleo de dominio y su aislamiento. **No incluye todavía**
-autenticación, autorización a nivel HTTP, cifrado de columnas ni cabeceras de seguridad
-del frontend. Nada de esto debe desplegarse en una red pública hasta completar
-`feature/security-jwt-passkeys`.
+Lo que **no** está hecho todavía, para que la deuda sea visible:
+
+- **Passkeys (WebAuthn)**, comprometidas como rama aparte.
+- **Cabeceras de seguridad del frontend** (CSP del cliente), que llegan con la PWA.
+- **TLS**: la aplicación no termina TLS por sí misma; depende de la plataforma de
+  despliegue. Sin TLS, el token de acceso viaja en claro y todo lo demás da igual.
+- **Rotación del `JWT_SECRET`**: hoy cambiarlo invalida todas las sesiones de golpe.
+  Aceptable para dos usuarios, pero conviene saberlo.

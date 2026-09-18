@@ -51,6 +51,16 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Autenticacion: firma y verificacion de JWT, y cifrado de contrasenas. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
         <!-- Migraciones versionadas: el esquema es codigo revisable, no un efecto
              secundario de las entidades JPA. -->
         <dependency>

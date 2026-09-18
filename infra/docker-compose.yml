@@ -41,6 +41,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gastos
       SPRING_DATASOURCE_USERNAME: gastos
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+      # SOLO desarrollo local. En cualquier entorno accesible desde red, genera una
+      # clave aleatoria y pasala por entorno: openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:-clave-de-desarrollo-local-de-mas-de-32-caracteres}
       CORS_ALLOWED_ORIGINS: http://localhost:5173
     ports:
       - "127.0.0.1:8080:8080"

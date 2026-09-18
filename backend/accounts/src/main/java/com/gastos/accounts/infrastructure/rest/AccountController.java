@@ -6,8 +6,10 @@ import com.gastos.accounts.infrastructure.rest.dto.AccountRequest;
 import com.gastos.accounts.infrastructure.rest.dto.AccountResponse;
 import com.gastos.accounts.infrastructure.rest.dto.BalanceOperationRequest;
 import com.gastos.accounts.infrastructure.rest.dto.RenameAccountRequest;
+import com.gastos.shared.domain.AuthenticatedUser;
 import com.gastos.shared.domain.HouseholdId;
 import com.gastos.shared.domain.Money;
+import com.gastos.shared.web.CurrentUser;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,81 +45,81 @@ public class AccountController {
 
     @PostMapping
     public ResponseEntity<AccountResponse> open(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody AccountRequest request) {
 
         AccountResponse response = AccountRestMapper.toResponse(useCase.open(
-                AccountRestMapper.toCommand(new HouseholdId(householdId), request)));
+                AccountRestMapper.toCommand(user.householdId(), request)));
 
         return ResponseEntity.created(URI.create("/api/v1/accounts/" + response.id())).body(response);
     }
 
     @GetMapping
-    public List<AccountResponse> list(@RequestHeader("X-Household-Id") UUID householdId) {
-        return AccountRestMapper.toResponses(useCase.listByHousehold(new HouseholdId(householdId)));
+    public List<AccountResponse> list(@CurrentUser AuthenticatedUser user) {
+        return AccountRestMapper.toResponses(useCase.listByHousehold(user.householdId()));
     }
 
     /** Patrimonio agregado del hogar: cifra de cabecera del resumen. */
     @GetMapping("/total-balance")
-    public Map<String, BigDecimal> totalBalance(@RequestHeader("X-Household-Id") UUID householdId) {
-        return Map.of("totalBalance", useCase.totalBalance(new HouseholdId(householdId)).amount());
+    public Map<String, BigDecimal> totalBalance(@CurrentUser AuthenticatedUser user) {
+        return Map.of("totalBalance", useCase.totalBalance(user.householdId()).amount());
     }
 
     @GetMapping("/{id}")
     public AccountResponse findById(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
         return AccountRestMapper.toResponse(
-                useCase.findById(new HouseholdId(householdId), new AccountId(id)));
+                useCase.findById(user.householdId(), new AccountId(id)));
     }
 
     @PutMapping("/{id}/alias")
     public AccountResponse rename(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody RenameAccountRequest request) {
 
         return AccountRestMapper.toResponse(
-                useCase.rename(new HouseholdId(householdId), new AccountId(id), request.alias()));
+                useCase.rename(user.householdId(), new AccountId(id), request.alias()));
     }
 
     @PostMapping("/{id}/credit")
     public AccountResponse credit(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody BalanceOperationRequest request) {
 
         return AccountRestMapper.toResponse(useCase.credit(
-                new HouseholdId(householdId), new AccountId(id), Money.euros(request.amount())));
+                user.householdId(), new AccountId(id), Money.euros(request.amount())));
     }
 
     @PostMapping("/{id}/debit")
     public AccountResponse debit(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody BalanceOperationRequest request) {
 
         return AccountRestMapper.toResponse(useCase.debit(
-                new HouseholdId(householdId), new AccountId(id), Money.euros(request.amount())));
+                user.householdId(), new AccountId(id), Money.euros(request.amount())));
     }
 
     @PutMapping("/{id}/balance")
     public AccountResponse reconcile(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id,
             @Valid @RequestBody BalanceOperationRequest request) {
 
         return AccountRestMapper.toResponse(useCase.reconcile(
-                new HouseholdId(householdId), new AccountId(id), Money.euros(request.amount())));
+                user.householdId(), new AccountId(id), Money.euros(request.amount())));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> close(
-            @RequestHeader("X-Household-Id") UUID householdId,
+            @CurrentUser AuthenticatedUser user,
             @PathVariable UUID id) {
 
-        useCase.close(new HouseholdId(householdId), new AccountId(id));
+        useCase.close(user.householdId(), new AccountId(id));
         return ResponseEntity.noContent().build();
     }
 }
