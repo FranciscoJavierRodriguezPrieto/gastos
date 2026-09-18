@@ -9,12 +9,11 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -28,13 +27,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <p>El contador vive en memoria y por instancia: suficiente para un hogar de dos
  * personas sobre un despliegue de un solo nodo. Si algun dia hay mas de una instancia,
  * hara falta un contador compartido.</p>
+ *
+ * <p>Se registra <strong>dentro</strong> de la cadena de seguridad y despues de la
+ * autenticacion. Colocado antes, el token todavia no estaria verificado y el limite solo
+ * podria aplicarse por direccion IP, que es mucho mas facil de rotar.</p>
  */
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
-@EnableConfigurationProperties(RateLimitProperties.class)
 public class RateLimitFilter extends OncePerRequestFilter {
-
-    private static final String HOUSEHOLD_HEADER = "X-Household-Id";
 
     private final RateLimitProperties properties;
     private final Clock clock;
@@ -77,14 +75,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Identifica al cliente por hogar y, si aun no se conoce, por direccion de origen.
+     * Identifica al cliente por el sujeto del token y, si aun no se ha autenticado, por
+     * direccion de origen.
      *
-     * <p>No se usa {@code X-Forwarded-For} sin mas: es una cabecera que el cliente
-     * controla, y confiar en ella permitiria esquivar el limite rotando su valor.</p>
+     * <p>Se toma del {@code SecurityContext} y nunca de una cabecera: una cabecera la
+     * controla el cliente, y bastaria rotar su valor para esquivar el limite. El token,
+     * en cambio, va firmado.</p>
      */
     private static String clientKey(HttpServletRequest request) {
-        String household = request.getHeader(HOUSEHOLD_HEADER);
-        return household != null && !household.isBlank() ? "h:" + household : "ip:" + request.getRemoteAddr();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof Jwt jwt && jwt.getSubject() != null) {
+            return "u:" + jwt.getSubject();
+        }
+        return "ip:" + request.getRemoteAddr();
     }
 
     private static final class Window {

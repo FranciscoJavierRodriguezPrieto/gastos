@@ -6,16 +6,33 @@ porcentajes en unidades de tanto por ciento (`30.00` = 30%).
 Mantener este inventario al día es parte del trabajo, no documentación opcional: un
 endpoint olvidado y sin vigilar es exactamente OWASP API9.
 
-## Identidad (provisional)
+## Autenticación
 
-| Cabecera | Uso |
-|---|---|
-| `X-Household-Id` | UUID del hogar. Obligatoria salvo en `/mortgage/simulations`. |
-| `X-User-Id` | UUID del usuario. Sólo al registrar un gasto. |
+Todo exige `Authorization: Bearer <token de acceso>`, salvo los endpoints públicos que se
+listan abajo. Sin token válido: **401**.
 
-> **Andamio de desarrollo.** Estas cabeceras desaparecen en
-> `feature/security-jwt-passkeys`, donde el hogar y el usuario se leen del token.
-> Hasta entonces la API no debe exponerse fuera de la red local.
+El hogar y el usuario se leen del token. No hay ninguna cabecera de identidad que el
+cliente pueda escribir.
+
+| Método | Ruta | Público | Descripción |
+|---|---|---|---|
+| `GET` | `/auth/status` | sí | Si la instalación necesita alta inicial. |
+| `POST` | `/auth/register` | sí | Crea el hogar y su titular. **Sólo funciona si no existe ningún hogar.** Devuelve la sesión ya iniciada. |
+| `POST` | `/auth/login` | sí | Inicia sesión. |
+| `POST` | `/auth/refresh` | sí | Canjea el token de refresco por uno nuevo. **Rota**: el anterior queda consumido. |
+| `POST` | `/auth/logout` | sí | Revoca el token de refresco. Siempre `204`. |
+| `GET` | `/auth/me` | no | El usuario autenticado. |
+| `GET` | `/auth/members` | no | Miembros del hogar. |
+| `POST` | `/auth/members` | no | Da de alta al segundo conviviente. **Sólo el `OWNER`**; un `MEMBER` recibe `403`. |
+
+**Token de acceso:** JWT firmado, 15 minutos, no revocable.
+**Token de refresco:** cadena opaca, 30 días, revocable. Se entrega una sola vez y en base
+de datos sólo queda su hash.
+
+**Reutilizar un token de refresco ya canjeado revoca toda la sesión.** Es la defensa ante
+un token robado: si reaparece uno consumido, caen todos.
+
+Las razones de este diseño están en [ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md).
 
 ## Gastos
 
@@ -67,8 +84,7 @@ que el alias y el nombre del banco identifican la cuenta de sobra.
 
 La simulación es `POST` aunque no modifique nada: son una docena de parámetros
 económicos del hogar y en la query string acabarían en los registros de acceso y en el
-historial del navegador. Exige `X-Household-Id` porque el catálogo de programas se
-configura por hogar.
+historial del navegador.
 
 ### Modos de financiación
 
@@ -113,6 +129,8 @@ Formato único:
 
 | Código | Cuándo |
 |---|---|
+| `401` | Falta el token, no es válido, ha caducado, o las credenciales no cuadran. |
+| `403` | El token es válido pero el rol no alcanza. |
 | `400` | Petición mal formada: falta un campo, el tipo no encaja, falta una cabecera, hay un campo desconocido. |
 | `404` | El recurso no existe **o no es de este hogar**. Los dos casos responden igual a propósito. |
 | `422` | La petición es válida pero una regla de negocio la rechaza (cuenta conjunta con un solo titular, descubierto, categoría inexistente). |
@@ -122,15 +140,23 @@ Formato único:
 ## Ejemplo
 
 ```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"householdName":"Nuestra casa","email":"titular@ejemplo.es","displayName":"Titular","password":"una-contrasena-larga-y-decente","monthlyNetIncome":2200.00}'
+```
+
+Después, con el `accessToken` que devuelve:
+
+```bash
 curl -X POST http://localhost:8080/api/v1/mortgage/simulations \
   -H 'Content-Type: application/json' \
-  -H 'X-Household-Id: 11111111-1111-1111-1111-111111111111' \
+  -H 'Authorization: Bearer <accessToken>' \
   -d '{"propertyPrice":280000,"availableSavings":50000,"targetReserve":5000,"annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":4500,"otherMonthlyDebts":225,"applicantAge":32,"firstHome":true,"financingMode":"AUTOMATICO"}'
 ```
 
-Instalar el catálogo de partida y volver a simular:
+Instalar el catálogo de partida:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/mortgage/programs/reference-catalog \
-  -H 'X-Household-Id: 11111111-1111-1111-1111-111111111111'
+  -H 'Authorization: Bearer <accessToken>'
 ```

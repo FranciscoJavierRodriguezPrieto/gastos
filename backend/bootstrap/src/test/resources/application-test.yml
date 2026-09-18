@@ -24,5 +24,13 @@ spring:
     locations: classpath:db/migration
 
 gastos:
+  security:
+    jwt:
+      # Clave fija SOLO para tests, para que sean reproducibles. En cualquier otro
+      # entorno llega por variable de entorno.
+      secret: clave-de-pruebas-de-al-menos-32-caracteres
+      access-token-ttl: 15m
+      refresh-token-ttl: 30d
+
   rate-limit:
     enabled: false

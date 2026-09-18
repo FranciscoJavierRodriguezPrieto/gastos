@@ -3,6 +3,14 @@ package com.gastos.config;
 import com.gastos.accounts.application.ManageAccountsUseCase;
 import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
+import com.gastos.iam.application.AuthenticateUseCase;
+import com.gastos.iam.application.ManageHouseholdUseCase;
+import com.gastos.iam.application.port.TokenService;
+import com.gastos.iam.domain.port.HouseholdRepository;
+import com.gastos.iam.domain.port.PasswordHasher;
+import com.gastos.iam.domain.port.RefreshTokenRepository;
+import com.gastos.iam.domain.port.UserCredentialRepository;
+import com.gastos.iam.domain.port.UserRepository;
 import com.gastos.expenses.domain.port.ExpenseRepository;
 import com.gastos.mortgage.application.ManageAidProgramsUseCase;
 import com.gastos.mortgage.application.SimulateMortgageUseCase;
@@ -44,5 +52,27 @@ public class UseCaseConfiguration {
     @Bean
     public ManageAidProgramsUseCase manageAidProgramsUseCase(AidProgramRepository repository) {
         return new ManageAidProgramsUseCase(repository);
+    }
+
+    @Bean
+    public AuthenticateUseCase authenticateUseCase(UserRepository users,
+                                                   UserCredentialRepository credentials,
+                                                   RefreshTokenRepository refreshTokens,
+                                                   PasswordHasher passwordHasher,
+                                                   TokenService tokenService,
+                                                   Clock clock) {
+        return new AuthenticateUseCase(users, credentials, refreshTokens, passwordHasher,
+                tokenService, clock);
+    }
+
+    @Bean
+    public ManageHouseholdUseCase manageHouseholdUseCase(HouseholdRepository households,
+                                                         UserRepository users,
+                                                         UserCredentialRepository credentials,
+                                                         PasswordHasher passwordHasher,
+                                                         AuthenticateUseCase authenticate,
+                                                         Clock clock) {
+        return new ManageHouseholdUseCase(households, users, credentials, passwordHasher,
+                authenticate, clock);
     }
 }

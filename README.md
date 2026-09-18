@@ -6,17 +6,15 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/persistence-postgresql`: dominio, motor de cálculo hipotecario con
-programas de ayuda configurables, **API REST completa** (gastos, cuentas e hipoteca) y
-**persistencia en PostgreSQL** con migraciones Flyway. 121 tests en verde, incluidos 9
-de arquitectura.
+Rama `feature/security-jwt`: dominio, motor de cálculo hipotecario con programas de
+ayuda configurables, **API REST completa**, **persistencia en PostgreSQL** con
+migraciones Flyway y **autenticación con JWT** y refresco rotatorio. 133 tests en verde,
+incluidos 9 de arquitectura.
 
-Las migraciones y el mapeo están verificados contra **PostgreSQL 16 real**, no sólo
-contra la H2 de los tests: esquema creado por Flyway, datos escritos por la API y
-releídos intactos tras reiniciar el proceso.
+Verificado contra **PostgreSQL 16 real**, no sólo contra la H2 de los tests.
 
-Todavía **no hay autenticación**: la identidad viaja en una cabecera sin firmar, así que
-la API no debe salir de la red local. El plan de ramas está en
+El backend está **funcionalmente completo y protegido**. Falta el frontend: hoy la
+aplicación sólo se usa con `curl` o desde los tests. El plan de ramas está en
 [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
 ## Módulos funcionales
@@ -39,6 +37,7 @@ la API no debe salir de la red local. El plan de ramas está en
 | Arquitectura | Monolito modular + hexagonal ([ADR-0001](docs/adr/ADR-0001-monolito-modular-vs-microservicios.md)) |
 | Tests | JUnit 5, AssertJ, Mockito, ArchUnit |
 | Base de datos | PostgreSQL (Neon en producción) |
+| Seguridad | Spring Security, JWT HS256, BCrypt ([ADR-0005](docs/adr/ADR-0005-autenticacion-con-jwt.md)) |
 | Frontend | PWA instalable, tema claro Verde Salvia |
 | Despliegue | Fly.io + Neon + Cloudflare Pages ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
 
@@ -80,8 +79,16 @@ mvn clean verify
 java -jar backend/bootstrap/target/gastos.jar
 ```
 
-Los tests no necesitan Docker: usan H2 en modo de compatibilidad PostgreSQL con las
-mismas migraciones de Flyway que se despliegan.
+**La aplicación no arranca sin `JWT_SECRET`**, y es intencionado: una clave de firma
+por defecto en el código es una clave pública. Genera una y expórtala:
+
+```bash
+export JWT_SECRET=$(openssl rand -base64 48)
+```
+
+Los tests no necesitan Docker ni esa variable: usan H2 en modo de compatibilidad
+PostgreSQL con las mismas migraciones de Flyway que se despliegan, y una clave fija de
+pruebas.
 
 ## Documentación
 
@@ -91,6 +98,7 @@ mismas migraciones de Flyway que se despliegan.
 - [ADR-0002 — Plataforma de despliegue gratuita](docs/adr/ADR-0002-plataforma-de-despliegue.md)
 - [ADR-0003 — No almacenar datos bancarios identificativos](docs/adr/ADR-0003-no-almacenar-datos-bancarios.md)
 - [ADR-0004 — Los programas de ayuda son datos, no código](docs/adr/ADR-0004-programas-de-ayuda-como-datos.md)
+- [ADR-0005 — Autenticación con JWT y refresco rotatorio](docs/adr/ADR-0005-autenticacion-con-jwt.md)
 - [Flujo de trabajo Git](docs/GIT_WORKFLOW.md)
 - [Seguridad y cumplimiento](docs/SECURITY.md)
 - [OWASP API Security Top 10 (2023)](docs/OWASP-API-SECURITY.md)

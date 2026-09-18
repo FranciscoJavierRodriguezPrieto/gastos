@@ -22,39 +22,33 @@ import org.springframework.test.web.servlet.MockMvc;
  * Top 10 (edicion 2023): limitacion de peticiones, cabeceras de seguridad y respuestas
  * de error que no filtran nada interno.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "gastos.rate-limit.enabled=true",
         "gastos.rate-limit.max-requests=3",
         "gastos.rate-limit.window-seconds=60"})
 @DisplayName("Bastionado de la API")
-class ApiHardeningTest {
+class ApiHardeningTest extends ApiTestSupport {
 
     private static final String SIMULATION = """
             {"propertyPrice":200000,"availableSavings":70000,"targetReserve":6000,\
             "annualNominalRate":3.00,"termYears":30,"netMonthlyIncome":4000,\
             "otherMonthlyDebts":225,"applicantAge":32,"firstHome":true}""";
 
-    @Autowired
-    private MockMvc mockMvc;
-
     @Test
     @DisplayName("API4: superar el limite de peticiones devuelve 429 con Retry-After")
     void rateLimitReturns429() throws Exception {
-        String household = UUID.randomUUID().toString();
+        String token = tokenForNewHousehold();
 
         for (int i = 0; i < 3; i++) {
             mockMvc.perform(post("/api/v1/mortgage/simulations")
-                            .header("X-Household-Id", household)
+                            .header(AUTHORIZATION, token)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(SIMULATION))
                     .andExpect(status().isOk());
         }
 
         mockMvc.perform(post("/api/v1/mortgage/simulations")
-                        .header("X-Household-Id", household)
+                        .header(AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(SIMULATION))
                 .andExpect(status().isTooManyRequests())
@@ -65,7 +59,7 @@ class ApiHardeningTest {
     @DisplayName("API8: toda respuesta lleva las cabeceras de seguridad")
     void securityHeadersArePresent() throws Exception {
         mockMvc.perform(get("/api/v1/expenses/catalog")
-                        .header("X-Household-Id", UUID.randomUUID().toString()))
+                        .header(AUTHORIZATION, tokenForNewHousehold()))
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("X-Frame-Options", "DENY"))
@@ -78,7 +72,7 @@ class ApiHardeningTest {
     @DisplayName("API8: una ruta inexistente devuelve 404 sin filtrar detalles internos")
     void unknownRouteLeaksNothing() throws Exception {
         mockMvc.perform(get("/api/v1/no-existe")
-                        .header("X-Household-Id", UUID.randomUUID().toString()))
+                        .header(AUTHORIZATION, tokenForNewHousehold()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Recurso no encontrado"))
                 .andExpect(jsonPath("$.stackTrace").doesNotExist())
@@ -92,7 +86,10 @@ class ApiHardeningTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.components").doesNotExist());
 
-        mockMvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
-        mockMvc.perform(get("/actuator/beans")).andExpect(status().isNotFound());
+        // Con token valido: no es que esten protegidos, es que no existen.
+        mockMvc.perform(get("/actuator/env").header(AUTHORIZATION, tokenForNewHousehold()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/actuator/beans").header(AUTHORIZATION, tokenForNewHousehold()))
+                .andExpect(status().isNotFound());
     }
 }

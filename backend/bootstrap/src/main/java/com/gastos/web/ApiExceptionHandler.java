@@ -1,5 +1,7 @@
 package com.gastos.web;
 
+import com.gastos.iam.application.AuthenticateUseCase;
+import com.gastos.iam.application.ManageHouseholdUseCase;
 import com.gastos.shared.domain.DomainException;
 import com.gastos.shared.domain.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
@@ -24,6 +27,9 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  * <ul>
  *   <li><strong>400</strong>: la peticion esta mal formada (falta un campo, el tipo no
  *       encaja, falta una cabecera). El cliente puede corregirla.</li>
+ *   <li><strong>401</strong>: no hay token, no es valido, o las credenciales no
+ *       cuadran. Siempre el mismo cuerpo, para no distinguir causas.</li>
+ *   <li><strong>403</strong>: el token es valido pero el rol no alcanza.</li>
  *   <li><strong>404</strong>: el recurso no existe <em>o no es de este hogar</em>. Los
  *       dos casos responden igual para no permitir enumerar identificadores ajenos.</li>
  *   <li><strong>422</strong>: la peticion es valida pero una regla de negocio la
@@ -36,6 +42,43 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    /**
+     * Credenciales no validas.
+     *
+     * <p>Mismo cuerpo tanto si el correo no existe como si la contrasena es incorrecta:
+     * distinguirlos convertiria el login en un comprobador de cuentas registradas.</p>
+     */
+    @ExceptionHandler(AuthenticateUseCase.InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleInvalidCredentials(
+            AuthenticateUseCase.InvalidCredentialsException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of(401, "UNAUTHORIZED", "Credenciales no validas",
+                        request.getRequestURI()));
+    }
+
+    /** El token es valido pero el rol no da para tanto. */
+    @ExceptionHandler(ManageHouseholdUseCase.NotAllowedException.class)
+    public ResponseEntity<ApiError> handleNotAllowed(ManageHouseholdUseCase.NotAllowedException e,
+                                                     HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(403, "FORBIDDEN", e.getMessage(), request.getRequestURI()));
+    }
+
+    /**
+     * Respuestas con estado explicito, como el 401 del resolver de identidad.
+     *
+     * <p>Sin este manejador las absorberia el catch-all de abajo y saldrian como 500,
+     * ocultando el motivo real.</p>
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException e,
+                                                         HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        return ResponseEntity.status(status)
+                .body(ApiError.of(status.value(), status.name(), status.getReasonPhrase(),
+                        request.getRequestURI()));
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException e,
