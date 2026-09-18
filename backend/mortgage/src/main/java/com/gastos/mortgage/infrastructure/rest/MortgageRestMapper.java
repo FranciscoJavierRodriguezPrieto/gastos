@@ -2,8 +2,12 @@ package com.gastos.mortgage.infrastructure.rest;
 
 import com.gastos.mortgage.domain.model.ApplicantProfile;
 import com.gastos.mortgage.domain.model.DebtToIncomeRatio;
+import com.gastos.mortgage.domain.model.FinancingChoice;
+import com.gastos.mortgage.domain.model.FinancingDecision;
+import com.gastos.mortgage.domain.model.FinancingMode;
 import com.gastos.mortgage.domain.model.FinancingPlan;
 import com.gastos.mortgage.domain.model.MortgageScenario;
+import com.gastos.mortgage.domain.model.ProgramEligibility;
 import com.gastos.mortgage.domain.model.SimulationRequest;
 import com.gastos.mortgage.domain.model.SimulationResult;
 import com.gastos.mortgage.domain.model.UpfrontCosts;
@@ -11,11 +15,18 @@ import com.gastos.mortgage.domain.model.ViabilityAssessment;
 import com.gastos.mortgage.infrastructure.rest.dto.ScenarioResponseDto;
 import com.gastos.mortgage.infrastructure.rest.dto.SimulationRequestDto;
 import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto;
+import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto.FinancingDecisionDto;
 import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto.FinancingPlanDto;
+import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto.ProgramEligibilityDto;
 import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto.UpfrontCostsDto;
 import com.gastos.mortgage.infrastructure.rest.dto.SimulationResponseDto.ViabilityDto;
+import com.gastos.shared.domain.DomainException;
 import com.gastos.shared.domain.Money;
 import com.gastos.shared.domain.Percentage;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Traduce entre el contrato HTTP de la herramienta de hipoteca y el dominio.
@@ -43,10 +54,12 @@ public final class MortgageRestMapper {
                 Money.euros(dto.targetReserve()),
                 Percentage.of(dto.annualNominalRate()),
                 dto.termYears(),
-                applicant);
+                applicant,
+                toFinancingChoice(dto));
     }
 
     public static SimulationRequestDto toDto(SimulationRequest request) {
+        FinancingChoice financing = request.financing();
         return new SimulationRequestDto(
                 request.propertyPrice().amount(),
                 request.availableSavings().amount(),
@@ -56,7 +69,10 @@ public final class MortgageRestMapper {
                 request.applicant().netMonthlyIncome().amount(),
                 request.applicant().otherMonthlyDebts().amount(),
                 request.applicant().age(),
-                request.applicant().firstHome());
+                request.applicant().firstHome(),
+                financing.mode().name(),
+                financing.programId(),
+                financing.manualLoanToValue() == null ? null : financing.manualLoanToValue().value());
     }
 
     public static SimulationResponseDto toResponse(SimulationResult result) {
@@ -67,6 +83,7 @@ public final class MortgageRestMapper {
                 result.cashRequiredAtSigning().amount(),
                 toDto(result.upfrontCosts()),
                 toDto(result.financingPlan()),
+                toDto(result.financingDecision()),
                 toDto(result.viability()));
     }
 
@@ -78,6 +95,29 @@ public final class MortgageRestMapper {
                 toResponse(result),
                 scenario.createdAt(),
                 scenario.updatedAt());
+    }
+
+    /** Si no se indica modo se asume AUTOMATICO: el caso de quien solo mueve deslizadores. */
+    private static FinancingChoice toFinancingChoice(SimulationRequestDto dto) {
+        FinancingMode mode = parseMode(dto.financingMode());
+        return switch (mode) {
+            case AUTOMATICO -> FinancingChoice.automatic();
+            case PROGRAMA -> FinancingChoice.program(dto.programId());
+            case MANUAL -> FinancingChoice.manual(Percentage.of(dto.manualLoanToValue()));
+        };
+    }
+
+    private static FinancingMode parseMode(String value) {
+        if (value == null || value.isBlank()) {
+            return FinancingMode.AUTOMATICO;
+        }
+        try {
+            return FinancingMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new DomainException("Modo de financiacion no valido. Valores admitidos: "
+                    + Arrays.stream(FinancingMode.values()).map(Enum::name)
+                            .collect(Collectors.joining(", ")), e);
+        }
     }
 
     private static UpfrontCostsDto toDto(UpfrontCosts costs) {
@@ -97,6 +137,31 @@ public final class MortgageRestMapper {
                 plan.effectiveLoanToValue().value(),
                 plan.savingsSufficient(),
                 plan.shortfall().amount());
+    }
+
+    private static FinancingDecisionDto toDto(FinancingDecision decision) {
+        List<ProgramEligibilityDto> evaluations = decision.evaluations().stream()
+                .map(MortgageRestMapper::toDto)
+                .toList();
+
+        return new FinancingDecisionDto(
+                decision.mode().name(),
+                decision.mode().displayName(),
+                decision.appliedLoanToValue().value(),
+                decision.appliedProgramId(),
+                decision.appliedProgramName(),
+                evaluations,
+                decision.notes());
+    }
+
+    private static ProgramEligibilityDto toDto(ProgramEligibility eligibility) {
+        return new ProgramEligibilityDto(
+                eligibility.programId(),
+                eligibility.programName(),
+                eligibility.maxLoanToValue().value(),
+                eligibility.active(),
+                eligibility.eligible(),
+                eligibility.unmetCriteria());
     }
 
     private static ViabilityDto toDto(ViabilityAssessment viability) {

@@ -10,6 +10,7 @@ public record SimulationResult(SimulationRequest request,
                                FinancingPlan financingPlan,
                                Money monthlyPayment,
                                Money totalInterest,
+                               FinancingDecision financingDecision,
                                ViabilityAssessment viability) {
 
     public SimulationResult {
@@ -18,6 +19,7 @@ public record SimulationResult(SimulationRequest request,
         Guard.notNull(financingPlan, "financingPlan");
         Guard.notNull(monthlyPayment, "monthlyPayment");
         Guard.notNull(totalInterest, "totalInterest");
+        Guard.notNull(financingDecision, "financingDecision");
         Guard.notNull(viability, "viability");
     }
 

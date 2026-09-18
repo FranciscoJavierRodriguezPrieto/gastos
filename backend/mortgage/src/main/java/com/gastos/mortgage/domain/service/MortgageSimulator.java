@@ -1,6 +1,8 @@
 package com.gastos.mortgage.domain.service;
 
+import com.gastos.mortgage.domain.model.AidProgram;
 import com.gastos.mortgage.domain.model.AmortizationSchedule;
+import com.gastos.mortgage.domain.model.FinancingDecision;
 import com.gastos.mortgage.domain.model.FinancingPlan;
 import com.gastos.mortgage.domain.model.LoanTerms;
 import com.gastos.mortgage.domain.model.SimulationRequest;
@@ -8,7 +10,6 @@ import com.gastos.mortgage.domain.model.SimulationResult;
 import com.gastos.mortgage.domain.model.UpfrontCosts;
 import com.gastos.mortgage.domain.model.ViabilityAssessment;
 import com.gastos.mortgage.domain.policy.LendingPolicy;
-import com.gastos.mortgage.domain.policy.MiPrimeraViviendaPolicy;
 import com.gastos.mortgage.domain.policy.PurchaseCostsPolicy;
 import com.gastos.shared.domain.Guard;
 import com.gastos.shared.domain.Money;
@@ -21,44 +22,56 @@ import java.util.List;
  *
  * <ol>
  *   <li>gastos iniciales no financiables (ITP + notaria, registro y gestoria);</li>
- *   <li>LTV maximo aplicable segun el programa Mi Primera Vivienda;</li>
+ *   <li>LTV maximo aplicable, segun el modo de financiacion elegido;</li>
  *   <li>estructura de financiacion (prestamo, entrada, efectivo necesario);</li>
  *   <li>cuota mensual por amortizacion francesa;</li>
  *   <li>veredicto de viabilidad segun DTI y colchon.</li>
  * </ol>
  *
- * <p>Servicio de dominio sin estado ni anotaciones de framework: se instancia con sus
- * politicas y se puede ejecutar en un test unitario en microsegundos.</p>
+ * <p>Solo el paso 2 depende de los programas de ayuda. Del 3 en adelante el motor
+ * trabaja con un LTV y le da igual si viene de una convocatoria autonomica, de la
+ * financiacion estandar o de un valor que el usuario escribio a mano.</p>
+ *
+ * <p>Los programas se reciben como parametro en lugar de consultarse a un repositorio:
+ * asi el servicio de dominio sigue sin estado ni dependencias, y un test puede pasarle
+ * el catalogo que quiera sin base de datos.</p>
  */
 public final class MortgageSimulator {
 
     private final PurchaseCostsPolicy purchaseCostsPolicy;
-    private final MiPrimeraViviendaPolicy programPolicy;
+    private final LendingPolicy lendingPolicy;
+    private final FinancingSelector financingSelector;
     private final ViabilityAnalyzer viabilityAnalyzer;
 
-    public MortgageSimulator(PurchaseCostsPolicy purchaseCostsPolicy,
-                             MiPrimeraViviendaPolicy programPolicy,
-                             LendingPolicy lendingPolicy) {
+    public MortgageSimulator(PurchaseCostsPolicy purchaseCostsPolicy, LendingPolicy lendingPolicy) {
         this.purchaseCostsPolicy = Guard.notNull(purchaseCostsPolicy, "purchaseCostsPolicy");
-        this.programPolicy = Guard.notNull(programPolicy, "programPolicy");
-        this.viabilityAnalyzer = new ViabilityAnalyzer(Guard.notNull(lendingPolicy, "lendingPolicy"));
+        this.lendingPolicy = Guard.notNull(lendingPolicy, "lendingPolicy");
+        this.financingSelector = new FinancingSelector(lendingPolicy.standardLoanToValue());
+        this.viabilityAnalyzer = new ViabilityAnalyzer(lendingPolicy);
     }
 
-    /** Configuracion por defecto: Madrid, segunda mano, Mi Primera Vivienda, criterio bancario estandar. */
+    /** Configuracion por defecto: Madrid, segunda mano, criterio bancario estandar. */
     public static MortgageSimulator madridDefaults() {
         return new MortgageSimulator(PurchaseCostsPolicy.madridSecondHand(),
-                MiPrimeraViviendaPolicy.defaults(),
                 LendingPolicy.spanishStandard());
     }
 
+    /** Simulacion sin programas de ayuda: financiacion estandar. */
     public SimulationResult simulate(SimulationRequest request) {
+        return simulate(request, List.of());
+    }
+
+    public SimulationResult simulate(SimulationRequest request, List<AidProgram> programs) {
         Guard.notNull(request, "request");
+        Guard.notNull(programs, "programs");
 
         UpfrontCosts upfrontCosts = UpfrontCosts.of(request.propertyPrice(), purchaseCostsPolicy);
-        Percentage maxLtv = programPolicy.applicableLoanToValue(request.propertyPrice(),
-                request.applicant().age(), request.applicant().firstHome());
+
+        FinancingDecision decision = financingSelector.decide(
+                request.financing(), request.propertyPrice(), request.applicant(), programs);
+
         FinancingPlan plan = FinancingPlan.compute(request.propertyPrice(), request.availableSavings(),
-                request.targetReserve(), upfrontCosts, maxLtv);
+                request.targetReserve(), upfrontCosts, decision.appliedLoanToValue());
 
         Money monthlyPayment = Money.zero();
         Money totalInterest = Money.zero();
@@ -69,15 +82,15 @@ public final class MortgageSimulator {
         }
 
         ViabilityAssessment viability =
-                viabilityAnalyzer.analyze(plan, monthlyPayment, request.applicant());
+                viabilityAnalyzer.analyze(plan, monthlyPayment, request.applicant(), decision);
 
-        return new SimulationResult(request, upfrontCosts, plan, monthlyPayment, totalInterest, viability);
+        return new SimulationResult(request, upfrontCosts, plan, monthlyPayment, totalInterest,
+                decision, viability);
     }
 
     /** Cuadro de amortizacion del escenario, calculado bajo demanda por su tamano. */
-    public AmortizationSchedule scheduleFor(SimulationRequest request) {
-        Guard.notNull(request, "request");
-        SimulationResult result = simulate(request);
+    public AmortizationSchedule scheduleFor(SimulationRequest request, List<AidProgram> programs) {
+        SimulationResult result = simulate(request, programs);
         return AmortizationCalculator.schedule(loanTermsFor(request, result.financingPlan()));
     }
 
@@ -85,25 +98,31 @@ public final class MortgageSimulator {
      * Barrido de escenarios sobre los ingresos del hogar: alimenta el control deslizante
      * que responde a "que pasa si pasamos de 3.400 a 4.000 EUR al mes".
      */
-    public List<SimulationResult> sweepByIncome(SimulationRequest base, List<Money> incomes) {
+    public List<SimulationResult> sweepByIncome(SimulationRequest base, List<Money> incomes,
+                                                List<AidProgram> programs) {
         Guard.notNull(base, "base");
         Guard.notEmpty(incomes, "incomes");
         List<SimulationResult> results = new ArrayList<>(incomes.size());
         for (Money income : incomes) {
-            results.add(simulate(base.withNetMonthlyIncome(income)));
+            results.add(simulate(base.withNetMonthlyIncome(income), programs));
         }
         return List.copyOf(results);
     }
 
     /** Barrido sobre el tipo de interes: sensibilidad de la cuota ante subidas del TIN. */
-    public List<SimulationResult> sweepByRate(SimulationRequest base, List<Percentage> rates) {
+    public List<SimulationResult> sweepByRate(SimulationRequest base, List<Percentage> rates,
+                                              List<AidProgram> programs) {
         Guard.notNull(base, "base");
         Guard.notEmpty(rates, "rates");
         List<SimulationResult> results = new ArrayList<>(rates.size());
         for (Percentage rate : rates) {
-            results.add(simulate(base.withAnnualNominalRate(rate)));
+            results.add(simulate(base.withAnnualNominalRate(rate), programs));
         }
         return List.copyOf(results);
+    }
+
+    public LendingPolicy lendingPolicy() {
+        return lendingPolicy;
     }
 
     private static LoanTerms loanTermsFor(SimulationRequest request, FinancingPlan plan) {

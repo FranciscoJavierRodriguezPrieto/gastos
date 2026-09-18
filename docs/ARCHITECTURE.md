@@ -76,9 +76,12 @@ sólo el resultado final se redondea: redondear antes acumula euros de desviaci�
 largo de 30 años.
 
 **Los umbrales de negocio son políticas, no constantes.** `PurchaseCostsPolicy`
-(ITP 6% + 4% de gastos), `MiPrimeraViviendaPolicy` (LTV 95%, precio y edad máximos) y
-`LendingPolicy` (DTI 30% vivienda / 40% total) son objetos configurables. La normativa
-autonómica cambia; el código no debería.
+(ITP 6% + 4% de gastos) y `LendingPolicy` (DTI 30% vivienda / 40% total, LTV estándar
+80%) son objetos configurables.
+
+**Y los programas de ayuda ni siquiera son código: son datos.** `AidProgram` es un
+agregado editable desde la aplicación, con CRUD propio, porque las convocatorias cambian
+y conviven varias a la vez ([ADR-0004](adr/ADR-0004-programas-de-ayuda-como-datos.md)).
 
 **El resultado de una simulación no se persiste, sólo su entrada.** `MortgageScenario`
 guarda el `SimulationRequest`. Los tipos y las políticas cambian, así que el resultado
@@ -94,7 +97,7 @@ turno recuerde añadir el filtro.
 SimulationRequest
       │
       ├─ 1. UpfrontCosts          ITP (6%) + notaría/registro/gestoría (4%)
-      ├─ 2. LTV aplicable         MiPrimeraViviendaPolicy → 95% si es elegible, 80% si no
+      ├─ 2. FinancingSelector     AUTOMATICO / PROGRAMA / MANUAL → LTV aplicable
       ├─ 3. FinancingPlan         reserva → gastos → entrada → préstamo
       ├─ 4. AmortizationCalculator cuota mensual (sistema francés)
       └─ 5. ViabilityAnalyzer     DTI vivienda / DTI total / renta disponible / colchón
@@ -103,11 +106,16 @@ SimulationRequest
                          INVIABLE · VIABLE_AJUSTADA · ÓPTIMA
 ```
 
-> **Aviso sobre los parámetros por defecto.** Los valores del programa *Mi Primera
-> Vivienda* (LTV 95%, precio máximo 390.000 €, edad máxima 35) y el tipo de ITP son una
-> configuración de trabajo. Deben contrastarse con la convocatoria vigente publicada por
-> la Comunidad de Madrid antes de usarlos para decidir una compra real. El código está
-> preparado para cambiarlos sin recompilar.
+**Sólo el paso 2 conoce los programas de ayuda.** Del 3 en adelante el motor trabaja
+con un `Percentage` y le da igual si viene de una convocatoria autonómica, de la
+financiación estándar o de un número que el usuario escribió a mano. Aislar ahí la
+variabilidad normativa es lo que permite añadir una convocatoria sin tocar una línea de
+matemática financiera.
+
+> **Aviso sobre las cifras.** Ni el catálogo de partida ni el tipo de ITP están
+> verificados: son una configuración de trabajo. Deben contrastarse con la normativa
+> vigente publicada por la Comunidad de Madrid antes de usarlos para decidir una compra
+> real. Todos son editables desde la aplicación, sin recompilar.
 
 ## Compilar y probar
 

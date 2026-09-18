@@ -26,10 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Adaptador REST de la herramienta de hipoteca.
  *
- * <p>La simulacion es un POST y no un GET pese a no modificar nada: son nueve
+ * <p>La simulacion es un POST y no un GET pese a no modificar nada: son una docena de
  * parametros, varios con decimales, y meterlos en la URL los dejaria escritos en los
  * registros de acceso y en el historial del navegador. Datos economicos del hogar no
  * viajan en la query string.</p>
+ *
+ * <p>La simulacion tambien exige el hogar porque el catalogo de programas de ayuda se
+ * configura por hogar: sin saber quien pregunta no se puede decidir el LTV.</p>
  */
 @RestController
 @RequestMapping("/api/v1/mortgage")
@@ -43,16 +46,20 @@ public class MortgageController {
 
     /** Simulacion efimera: es la que responde a cada movimiento de los deslizadores. */
     @PostMapping("/simulations")
-    public SimulationResponseDto simulate(@Valid @RequestBody SimulationRequestDto request) {
-        return MortgageRestMapper.toResponse(
-                useCase.simulate(MortgageRestMapper.toDomain(request)));
+    public SimulationResponseDto simulate(
+            @RequestHeader("X-Household-Id") UUID householdId,
+            @Valid @RequestBody SimulationRequestDto request) {
+
+        return MortgageRestMapper.toResponse(useCase.simulate(
+                new HouseholdId(householdId), MortgageRestMapper.toDomain(request)));
     }
 
     @GetMapping("/scenarios")
     public List<ScenarioResponseDto> listScenarios(@RequestHeader("X-Household-Id") UUID householdId) {
-        return useCase.listScenarios(new HouseholdId(householdId)).stream()
+        HouseholdId household = new HouseholdId(householdId);
+        return useCase.listScenarios(household).stream()
                 .map(scenario -> MortgageRestMapper.toResponse(
-                        scenario, useCase.simulate(scenario.request())))
+                        scenario, useCase.simulate(household, scenario.request())))
                 .toList();
     }
 
@@ -61,12 +68,12 @@ public class MortgageController {
             @RequestHeader("X-Household-Id") UUID householdId,
             @Valid @RequestBody ScenarioRequestDto request) {
 
+        HouseholdId household = new HouseholdId(householdId);
         SimulationRequest simulation = MortgageRestMapper.toDomain(request.simulation());
-        MortgageScenario scenario =
-                useCase.saveScenario(new HouseholdId(householdId), request.name(), simulation);
+        MortgageScenario scenario = useCase.saveScenario(household, request.name(), simulation);
 
         ScenarioResponseDto response =
-                MortgageRestMapper.toResponse(scenario, useCase.simulate(simulation));
+                MortgageRestMapper.toResponse(scenario, useCase.simulate(household, simulation));
 
         return ResponseEntity.created(URI.create("/api/v1/mortgage/scenarios/" + response.id()))
                 .body(response);
@@ -89,11 +96,12 @@ public class MortgageController {
             @PathVariable UUID id,
             @Valid @RequestBody ScenarioRequestDto request) {
 
+        HouseholdId household = new HouseholdId(householdId);
         SimulationRequest simulation = MortgageRestMapper.toDomain(request.simulation());
-        MortgageScenario scenario = useCase.updateScenario(
-                new HouseholdId(householdId), id, request.name(), simulation);
+        MortgageScenario scenario =
+                useCase.updateScenario(household, id, request.name(), simulation);
 
-        return MortgageRestMapper.toResponse(scenario, useCase.simulate(simulation));
+        return MortgageRestMapper.toResponse(scenario, useCase.simulate(household, simulation));
     }
 
     @DeleteMapping("/scenarios/{id}")

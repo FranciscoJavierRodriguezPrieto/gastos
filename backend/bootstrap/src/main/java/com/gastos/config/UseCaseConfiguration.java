@@ -4,7 +4,9 @@ import com.gastos.accounts.application.ManageAccountsUseCase;
 import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
 import com.gastos.expenses.domain.port.ExpenseRepository;
+import com.gastos.mortgage.application.ManageAidProgramsUseCase;
 import com.gastos.mortgage.application.SimulateMortgageUseCase;
+import com.gastos.mortgage.domain.port.AidProgramRepository;
 import com.gastos.mortgage.domain.port.MortgageScenarioRepository;
 import com.gastos.mortgage.domain.service.MortgageSimulator;
 import java.time.Clock;
@@ -33,8 +35,14 @@ public class UseCaseConfiguration {
 
     @Bean
     public SimulateMortgageUseCase simulateMortgageUseCase(MortgageSimulator simulator,
-                                                           MortgageScenarioRepository repository,
+                                                           MortgageScenarioRepository scenarios,
+                                                           AidProgramRepository programs,
                                                            Clock clock) {
-        return new SimulateMortgageUseCase(simulator, repository, clock);
+        return new SimulateMortgageUseCase(simulator, scenarios, programs, clock);
+    }
+
+    @Bean
+    public ManageAidProgramsUseCase manageAidProgramsUseCase(AidProgramRepository repository) {
+        return new ManageAidProgramsUseCase(repository);
     }
 }

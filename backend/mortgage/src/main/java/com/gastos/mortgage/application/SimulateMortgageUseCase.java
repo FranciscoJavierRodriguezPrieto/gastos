@@ -1,9 +1,11 @@
 package com.gastos.mortgage.application;
 
+import com.gastos.mortgage.domain.model.AidProgram;
 import com.gastos.mortgage.domain.model.AmortizationSchedule;
 import com.gastos.mortgage.domain.model.MortgageScenario;
 import com.gastos.mortgage.domain.model.SimulationRequest;
 import com.gastos.mortgage.domain.model.SimulationResult;
+import com.gastos.mortgage.domain.port.AidProgramRepository;
 import com.gastos.mortgage.domain.port.MortgageScenarioRepository;
 import com.gastos.mortgage.domain.service.MortgageSimulator;
 import com.gastos.shared.domain.Guard;
@@ -17,32 +19,37 @@ import java.util.UUID;
  * Casos de uso de la herramienta de hipoteca: simular al vuelo y gestionar los
  * escenarios guardados.
  *
- * <p>La capa de aplicacion solo orquesta: valida la autorizacion, recupera el agregado
- * y delega el calculo en el dominio. No contiene una sola regla financiera, de forma
- * que toda la logica de negocio sea testeable sin infraestructura.</p>
+ * <p>La capa de aplicacion solo orquesta: comprueba la autorizacion, recupera el
+ * catalogo de programas del hogar y delega el calculo en el dominio. No contiene una
+ * sola regla financiera.</p>
  */
 public class SimulateMortgageUseCase {
 
     private final MortgageSimulator simulator;
     private final MortgageScenarioRepository scenarioRepository;
+    private final AidProgramRepository aidProgramRepository;
     private final Clock clock;
 
     public SimulateMortgageUseCase(MortgageSimulator simulator,
                                    MortgageScenarioRepository scenarioRepository,
+                                   AidProgramRepository aidProgramRepository,
                                    Clock clock) {
         this.simulator = Guard.notNull(simulator, "simulator");
         this.scenarioRepository = Guard.notNull(scenarioRepository, "scenarioRepository");
+        this.aidProgramRepository = Guard.notNull(aidProgramRepository, "aidProgramRepository");
         this.clock = Guard.notNull(clock, "clock");
     }
 
     /** Simulacion efimera: no toca el almacenamiento. Es la que mueven los deslizadores. */
-    public SimulationResult simulate(SimulationRequest request) {
-        return simulator.simulate(request);
+    public SimulationResult simulate(HouseholdId householdId, SimulationRequest request) {
+        Guard.notNull(householdId, "householdId");
+        return simulator.simulate(request, programsOf(householdId));
     }
 
     /** Cuadro de amortizacion completo del escenario. */
-    public AmortizationSchedule schedule(SimulationRequest request) {
-        return simulator.scheduleFor(request);
+    public AmortizationSchedule schedule(HouseholdId householdId, SimulationRequest request) {
+        Guard.notNull(householdId, "householdId");
+        return simulator.scheduleFor(request, programsOf(householdId));
     }
 
     public MortgageScenario saveScenario(HouseholdId householdId, String name,
@@ -66,13 +73,15 @@ public class SimulateMortgageUseCase {
     }
 
     /**
-     * Recupera un escenario guardado y lo recalcula con el motor vigente.
+     * Recupera un escenario guardado y lo recalcula con el motor y el catalogo vigentes.
      *
-     * <p>Se guarda la entrada, nunca el resultado: los tipos y las politicas cambian, y
-     * devolver una cuota calculada hace meses seria devolver un dato falso.</p>
+     * <p>Se guarda la entrada, nunca el resultado. Si el hogar corrige las condiciones de
+     * un programa, los escenarios guardados reflejan la correccion al abrirlos; devolver
+     * una cuota calculada hace meses seria devolver un dato falso.</p>
      */
     public SimulationResult replayScenario(HouseholdId householdId, UUID scenarioId) {
-        return simulator.simulate(requireOwned(householdId, scenarioId).request());
+        MortgageScenario scenario = requireOwned(householdId, scenarioId);
+        return simulator.simulate(scenario.request(), programsOf(householdId));
     }
 
     public List<MortgageScenario> listScenarios(HouseholdId householdId) {
@@ -83,6 +92,10 @@ public class SimulateMortgageUseCase {
     public void deleteScenario(HouseholdId householdId, UUID scenarioId) {
         requireOwned(householdId, scenarioId);
         scenarioRepository.delete(householdId, scenarioId);
+    }
+
+    private List<AidProgram> programsOf(HouseholdId householdId) {
+        return aidProgramRepository.findAllByHousehold(householdId);
     }
 
     /**

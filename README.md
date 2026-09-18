@@ -6,9 +6,10 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/rest-api`: dominio, motor de cálculo hipotecario y **API REST completa**
-(gastos, cuentas e hipoteca) con DTOs, mappers y bastionado OWASP API. 87 tests en verde,
-incluidos 9 de arquitectura.
+Rama `refactor/mortgage-programas-configurables`: dominio, motor de cálculo hipotecario
+con programas de ayuda configurables, y **API REST completa** (gastos, cuentas e
+hipoteca) con DTOs, mappers y bastionado OWASP API. 113 tests en verde, incluidos 9 de
+arquitectura.
 
 Todavía **no hay persistencia real** (los datos viven en memoria y se pierden al
 reiniciar) ni **autenticación**: la identidad viaja en una cabecera sin firmar, así que
@@ -21,7 +22,8 @@ la API no debe salir de la red local. El plan de ramas está en
 2. **Gastos** — registro, categorización y prorrateo de gastos recurrentes.
 3. **Mis Cuentas** — cuentas individuales y conjuntas, saldos y conciliación.
 4. **Herramientas de Hipoteca** — calculadora y análisis de viabilidad:
-   - programa *Mi Primera Vivienda* de la Comunidad de Madrid (LTV de hasta el 95%);
+   - catálogo de programas de ayuda **editable desde la aplicación**, con tres modos de
+     financiación: automático, programa concreto o LTV manual;
    - gastos iniciales no financiables (ITP 6% + 4% de notaría, registro y gestoría);
    - DTI vivienda (límite 30%) y DTI total con deudas previas (límite 40%);
    - motor de simulación con barridos de ingresos, tipo de interés y precio.
@@ -74,6 +76,7 @@ docker compose -f infra/docker-compose.yml up --build
 - [ADR-0001 — Monolito modular frente a microservicios](docs/adr/ADR-0001-monolito-modular-vs-microservicios.md)
 - [ADR-0002 — Plataforma de despliegue gratuita](docs/adr/ADR-0002-plataforma-de-despliegue.md)
 - [ADR-0003 — No almacenar datos bancarios identificativos](docs/adr/ADR-0003-no-almacenar-datos-bancarios.md)
+- [ADR-0004 — Los programas de ayuda son datos, no código](docs/adr/ADR-0004-programas-de-ayuda-como-datos.md)
 - [Flujo de trabajo Git](docs/GIT_WORKFLOW.md)
 - [Seguridad y cumplimiento](docs/SECURITY.md)
 - [OWASP API Security Top 10 (2023)](docs/OWASP-API-SECURITY.md)

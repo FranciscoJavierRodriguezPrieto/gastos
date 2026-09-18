@@ -2,6 +2,7 @@ package com.gastos.mortgage.infrastructure.rest.dto;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Salida completa del simulador, con todo lo que la pantalla necesita pintar sin
@@ -17,7 +18,34 @@ public record SimulationResponseDto(BigDecimal monthlyPayment,
                                     BigDecimal cashRequiredAtSigning,
                                     UpfrontCostsDto upfrontCosts,
                                     FinancingPlanDto financing,
+                                    FinancingDecisionDto financingDecision,
                                     ViabilityDto viability) {
+
+    /**
+     * Como se llego al LTV aplicado.
+     *
+     * @param evaluations estado de cada programa del catalogo frente a este escenario,
+     *                    para que la pantalla pueda mostrar "cumples estos dos y del
+     *                    tercero te falta la edad"
+     * @param notes       explicaciones en texto de por que salio este LTV
+     */
+    public record FinancingDecisionDto(String mode,
+                                       String modeLabel,
+                                       BigDecimal appliedLoanToValue,
+                                       UUID appliedProgramId,
+                                       String appliedProgramName,
+                                       List<ProgramEligibilityDto> evaluations,
+                                       List<String> notes) {
+    }
+
+    /** Resultado de contrastar el escenario con un programa concreto. */
+    public record ProgramEligibilityDto(UUID programId,
+                                        String programName,
+                                        BigDecimal maxLoanToValue,
+                                        boolean active,
+                                        boolean eligible,
+                                        List<String> unmetCriteria) {
+    }
 
     /** Gastos no financiables de la compraventa. */
     public record UpfrontCostsDto(BigDecimal transferTax,
