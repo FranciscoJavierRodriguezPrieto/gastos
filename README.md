@@ -11,6 +11,10 @@ programas de ayuda configurables, **API REST completa** (gastos, cuentas e hipot
 **persistencia en PostgreSQL** con migraciones Flyway. 121 tests en verde, incluidos 9
 de arquitectura.
 
+Las migraciones y el mapeo están verificados contra **PostgreSQL 16 real**, no sólo
+contra la H2 de los tests: esquema creado por Flyway, datos escritos por la API y
+releídos intactos tras reiniciar el proceso.
+
 Todavía **no hay autenticación**: la identidad viaja en una cabecera sin firmar, así que
 la API no debe salir de la red local. El plan de ramas está en
 [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
