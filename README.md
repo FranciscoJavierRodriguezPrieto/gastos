@@ -6,9 +6,13 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/architecture-setup`: estructura del proyecto, modelo de dominio en Java y
-motor de cálculo hipotecario, con 48 tests en verde (incluidos 6 de arquitectura).
-Todavía **no hay API REST, ni persistencia, ni autenticación**; el plan de ramas está en
+Rama `feature/rest-api`: dominio, motor de cálculo hipotecario y **API REST completa**
+(gastos, cuentas e hipoteca) con DTOs, mappers y bastionado OWASP API. 88 tests en verde,
+incluidos 9 de arquitectura.
+
+Todavía **no hay persistencia real** (los datos viven en memoria y se pierden al
+reiniciar) ni **autenticación**: la identidad viaja en una cabecera sin firmar, así que
+la API no debe salir de la red local. El plan de ramas está en
 [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
 ## Módulos funcionales
@@ -66,10 +70,12 @@ docker compose -f infra/docker-compose.yml up --build
 ## Documentación
 
 - [Arquitectura](docs/ARCHITECTURE.md)
+- [Inventario de la API](docs/API.md)
 - [ADR-0001 — Monolito modular frente a microservicios](docs/adr/ADR-0001-monolito-modular-vs-microservicios.md)
 - [ADR-0002 — Plataforma de despliegue gratuita](docs/adr/ADR-0002-plataforma-de-despliegue.md)
 - [Flujo de trabajo Git](docs/GIT_WORKFLOW.md)
 - [Seguridad y cumplimiento](docs/SECURITY.md)
+- [OWASP API Security Top 10 (2023)](docs/OWASP-API-SECURITY.md)
 
 ## Aviso
 

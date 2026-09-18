@@ -67,14 +67,15 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 
 ## Plan de ramas del proyecto
 
-| Orden | Rama | Contenido |
-|---|---|---|
-| 1 | `feature/architecture-setup` | **Actual.** Estructura, modelo de dominio, motor de hipoteca, tests, ADR. |
-| 2 | `feature/persistence-postgresql` | Adaptadores JPA, Flyway, cifrado de columnas sensibles. |
-| 3 | `feature/rest-api-mortgage` | Endpoints REST del simulador, DTOs, validación, manejo de errores. |
-| 4 | `feature/security-jwt-passkeys` | Spring Security, JWT/Passkeys, cabeceras, rate limiting. |
-| 5 | `feature/pwa-shell` | PWA: manifest, service worker, tokens de diseño, instalable en iOS. |
-| 6 | `feature/dashboard-ui` | Resumen, gráficos de distribución, KPI de superávit. |
-| 7 | `feature/expenses-ui` y `feature/accounts-ui` | Pantallas de gastos y cuentas. |
-| 8 | `feature/mortgage-ui` | Herramienta de hipoteca con simulación en tiempo real. |
-| 9 | `chore/deployment-pipeline` | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
+| Orden | Rama | Estado | Contenido |
+|---|---|---|---|
+| 1 | `feature/architecture-setup` | Integrada | Estructura, modelo de dominio, motor de hipoteca, tests, ADR. |
+| 2 | `feature/rest-api` | **Actual** | API REST completa, DTOs, mappers, CRUD, manejo de errores, bastionado OWASP API. |
+| 3 | `refactor/mortgage-programas-configurables` | Siguiente | Programas de ayuda como datos + modos de financiación (automático / programa / manual). |
+| 4 | `feature/persistence-postgresql` | Pendiente | Adaptadores JPA, Flyway, cifrado de columnas sensibles. Sustituye a los repositorios en memoria. |
+| 5 | `feature/security-jwt-passkeys` | Pendiente | Spring Security, JWT/Passkeys. **Bloquea cualquier despliegue público.** |
+| 6 | `feature/pwa-shell` | Pendiente | PWA: manifest, service worker, tokens de diseño, instalable en iOS. |
+| 7 | `feature/dashboard-ui` | Pendiente | Resumen, gráficos de distribución, KPI de superávit. |
+| 8 | `feature/expenses-ui` y `feature/accounts-ui` | Pendiente | Pantallas de gastos y cuentas. |
+| 9 | `feature/mortgage-ui` | Pendiente | Herramienta de hipoteca con simulación en tiempo real. |
+| 10 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
