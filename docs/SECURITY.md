@@ -1,0 +1,53 @@
+# Seguridad y cumplimiento
+
+Documento vivo. Marca lo que ya está implementado y lo que queda comprometido para
+ramas posteriores, para que la deuda de seguridad sea visible en vez de implícita.
+
+## OWASP Top 10 — mitigaciones
+
+| Riesgo | Mitigación | Estado |
+|---|---|---|
+| **A01 Control de acceso roto (BOLA/IDOR)** | Identificadores UUID no enumerables; `HouseholdId` obligatorio en la firma de todos los puertos; doble comprobación en el agregado (`isAccessibleBy`) además de en la consulta. | Implementado en el dominio |
+| **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor; IBAN cifrado a nivel de columna y expuesto sólo enmascarado (`Iban.masked()`). | Enmascarado hecho; cifrado de columna en `feature/persistence-postgresql` |
+| **A03 Inyección** | Sin SQL concatenado: JPA con consultas parametrizadas; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Iban`). | Validación de dominio hecha |
+| **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
+| **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
+| **A06 Componentes vulnerables** | Dependabot y `mvn dependency-check` en CI; BOM de Spring Boot para versiones coherentes. | Pendiente: `chore/deployment-pipeline` |
+| **A07 Fallos de identificación y autenticación** | JWT de vida corta con refresh rotatorio, o Passkeys (WebAuthn) para dos usuarios; sin registro abierto: alta por invitación del `OWNER`. | Pendiente: `feature/security-jwt-passkeys` |
+| **A08 Fallos de integridad** | Dependencias con versión fijada; imágenes Docker por digest; CI que verifica el build. | Parcial |
+| **A09 Fallos de registro y monitorización** | `DomainException` con mensajes de negocio, sin datos personales en las trazas; logs estructurados con identificador de correlación. | Parcial |
+| **A10 SSRF** | La aplicación no realiza peticiones salientes a URLs controladas por el usuario. | No aplica |
+
+Frente a **XSS** el frontend escapa por defecto y se sirve con una CSP restrictiva;
+frente a **CSRF**, la API es *stateless* con token en cabecera `Authorization` (no en
+cookie), lo que elimina el vector; si en algún momento se usaran cookies, serían
+`SameSite=Strict` con token anti-CSRF.
+
+## CCN-STIC-812 — criterios aplicados
+
+- **Mínima superficie expuesta:** un solo puerto, Actuator reducido a `health`, cabecera
+  `Server` suprimida, sin endpoints de depuración en producción.
+- **Gestión de errores:** el usuario recibe un mensaje genérico; el detalle queda en el
+  log del servidor. `include-stacktrace: never`.
+- **Trazabilidad:** registro de autenticaciones y de operaciones que modifican saldos.
+- **Cifrado:** TLS 1.2+ en tránsito; datos sensibles cifrados en reposo.
+- **Privilegio mínimo:** el contenedor corre con usuario no root; el usuario de base de
+  datos no tiene permisos DDL en producción (las migraciones usan credencial aparte).
+- **Configuración fuera del código:** secretos por variable de entorno, nunca en el
+  repositorio (ver `.gitignore`).
+
+## Privacidad (RGPD)
+
+- **Minimización:** sólo se almacena lo necesario. El IBAN completo nunca sale del
+  servidor; la UI trabaja con la versión enmascarada.
+- **Sin terceros:** ni analítica, ni trazas externas, ni fuentes remotas. La PWA se
+  sirve con todo el contenido propio.
+- **Portabilidad y borrado:** exportación completa en JSON y borrado en cascada del
+  hogar, comprometidos para la rama de persistencia.
+
+## Pendiente explícito
+
+Esta rama entrega el núcleo de dominio y su aislamiento. **No incluye todavía**
+autenticación, autorización a nivel HTTP, cifrado de columnas ni cabeceras de seguridad
+del frontend. Nada de esto debe desplegarse en una red pública hasta completar
+`feature/security-jwt-passkeys`.
