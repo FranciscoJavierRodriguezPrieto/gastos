@@ -1,0 +1,44 @@
+# Entorno local completo: API + PostgreSQL.
+#
+#   docker compose -f infra/docker-compose.yml up --build
+#
+# Las credenciales de este fichero son SOLO para desarrollo local. En cualquier entorno
+# accesible desde red se inyectan por variable de entorno y nunca se versionan.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gastos-db
+    environment:
+      POSTGRES_DB: gastos
+      POSTGRES_USER: gastos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+    ports:
+      - "127.0.0.1:5432:5432"   # sólo loopback: la BD no se expone a la red local
+    volumes:
+      - gastos-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gastos -d gastos"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: gastos-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gastos
+      SPRING_DATASOURCE_USERNAME: gastos
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+volumes:
+  gastos-db-data:
