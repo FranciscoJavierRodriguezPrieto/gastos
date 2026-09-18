@@ -1,5 +1,6 @@
 package com.gastos.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -19,6 +20,26 @@ class HexagonalArchitectureTest {
             .that().resideInAPackage("..domain..")
             .should().dependOnClassesThat().resideInAnyPackage("org.springframework..")
             .because("el nucleo financiero debe poder ejecutarse y testearse sin framework");
+
+    @ArchTest
+    static final ArchRule la_aplicacion_no_depende_de_spring = noClasses()
+            .that().resideInAPackage("..application..")
+            .should().dependOnClassesThat().resideInAnyPackage("org.springframework..")
+            .because("los casos de uso se instancian a mano en la raiz de composicion, "
+                    + "de modo que un test pueda crearlos con un doble del repositorio");
+
+    @ArchTest
+    static final ArchRule el_dominio_no_depende_de_los_dto = noClasses()
+            .that().resideInAnyPackage("..domain..", "..application..")
+            .should().dependOnClassesThat().resideInAPackage("..rest..")
+            .because("el contrato HTTP no puede condicionar al modelo: la traduccion es "
+                    + "responsabilidad exclusiva de los mappers");
+
+    @ArchTest
+    static final ArchRule los_dto_son_records_inmutables = classes()
+            .that().resideInAPackage("..rest.dto..")
+            .should().beRecords()
+            .because("un DTO mutable invita a reutilizarlo como modelo y a arrastrar estado");
 
     @ArchTest
     static final ArchRule el_dominio_no_depende_de_persistencia = noClasses()

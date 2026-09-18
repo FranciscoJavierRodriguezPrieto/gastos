@@ -5,6 +5,15 @@ spring:
     banner-mode: off
   jackson:
     default-property-inclusion: non_null
+    deserialization:
+      # Un campo desconocido en el cuerpo es un error, no algo que ignorar en silencio:
+      # avisa de contratos desincronizados y cierra el mass assignment (OWASP API6).
+      fail-on-unknown-properties: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
 
 server:
   port: ${PORT:8080}
@@ -16,6 +25,15 @@ server:
     include-stacktrace: never
     include-binding-errors: never
   shutdown: graceful
+  # Limites de consumo de recursos (OWASP API4): ningun cuerpo de esta API se acerca
+  # siquiera a estos tamanos.
+  max-http-request-header-size: 8KB
+  tomcat:
+    max-http-form-post-size: 256KB
+    max-swallow-size: 256KB
+    connection-timeout: 10s
+    threads:
+      max: 50
 
 # Superficie de gestion reducida al minimo: solo health y sin detalle para anonimos.
 management:
@@ -35,6 +53,15 @@ logging:
     com.gastos: INFO
 
 gastos:
+  # Origenes autorizados del frontend. Vacio significa que no se admite ninguno.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+  rate-limit:
+    enabled: true
+    max-requests: 120
+    window-seconds: 60
+
   mortgage:
     # Parametros de negocio externalizados: cambian por normativa, no por codigo.
     # Verificar contra la convocatoria vigente publicada por la Comunidad de Madrid.
