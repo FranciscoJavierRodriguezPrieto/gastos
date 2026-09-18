@@ -49,5 +49,19 @@ services:
       - "127.0.0.1:8080:8080"
     restart: unless-stopped
 
+  # Frontend: ficheros estaticos tal cual, sin paso de compilacion (ADR-0006). En
+  # produccion esto lo sirve Cloudflare Pages; aqui basta un nginx.
+  web:
+    image: nginx:alpine
+    container_name: gastos-web
+    depends_on:
+      - api
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro
+    ports:
+      # 5173 porque es el origen que la API trae autorizado por defecto en CORS.
+      - "127.0.0.1:5173:80"
+    restart: unless-stopped
+
 volumes:
   gastos-db-data:

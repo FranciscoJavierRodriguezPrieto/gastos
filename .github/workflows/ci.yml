@@ -29,6 +29,15 @@ jobs:
       - name: mvn verify
         run: mvn -B clean verify
 
+      # El frontend no tiene dependencias: basta el ejecutor de tests de Node.
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests del frontend
+        run: node --test "frontend/test/*.test.js"
+
       - name: Publicar informes de test
         if: always()
         uses: actions/upload-artifact@v4

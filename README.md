@@ -6,15 +6,14 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/security-jwt`: dominio, motor de cálculo hipotecario con programas de
-ayuda configurables, **API REST completa**, **persistencia en PostgreSQL** con
-migraciones Flyway y **autenticación con JWT** y refresco rotatorio. 133 tests en verde,
-incluidos 9 de arquitectura.
+Rama `feature/pwa-shell`: backend completo (dominio, hipoteca, API REST, PostgreSQL y
+autenticación con JWT) y **PWA instalable** con acceso, Resumen, Gastos y Cuentas
+funcionando. 135 tests de backend y 13 de frontend, todos en verde.
 
-Verificado contra **PostgreSQL 16 real**, no sólo contra la H2 de los tests.
+Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 
-El backend está **funcionalmente completo y protegido**. Falta el frontend: hoy la
-aplicación sólo se usa con `curl` o desde los tests. El plan de ramas está en
+Falta la **pantalla de hipoteca**: el motor de cálculo está completo y probado en el
+backend, pero todavía no tiene interfaz. El plan de ramas está en
 [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
 ## Módulos funcionales
@@ -38,7 +37,7 @@ aplicación sólo se usa con `curl` o desde los tests. El plan de ramas está en
 | Tests | JUnit 5, AssertJ, Mockito, ArchUnit |
 | Base de datos | PostgreSQL (Neon en producción) |
 | Seguridad | Spring Security, JWT HS256, BCrypt ([ADR-0005](docs/adr/ADR-0005-autenticacion-con-jwt.md)) |
-| Frontend | PWA instalable, tema claro Verde Salvia |
+| Frontend | PWA sin framework ni compilación ([ADR-0006](docs/adr/ADR-0006-frontend-sin-framework.md)) |
 | Despliegue | Fly.io + Neon + Cloudflare Pages ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
 
 ## Estructura
@@ -52,7 +51,7 @@ gastos/
 │   ├── expenses/        gastos, categorías, resumen mensual
 │   ├── mortgage/        amortización, gastos de compraventa, DTI, viabilidad
 │   └── bootstrap/       raíz de composición y artefacto ejecutable
-├── frontend/            PWA (tokens de diseño y manifiesto)
+├── frontend/            PWA: pantallas, cliente de la API y service worker
 ├── infra/               Dockerfile y docker-compose
 └── docs/                arquitectura, ADR, flujo Git, seguridad
 ```
@@ -87,9 +86,15 @@ la puesta en marcha, en el [manual de operación](docs/OPERACION.md)):
 export JWT_SECRET=$(openssl rand -base64 48)
 ```
 
+Con todo levantado, la aplicación queda en <http://localhost:5173>.
+
 Los tests no necesitan Docker ni esa variable: usan H2 en modo de compatibilidad
 PostgreSQL con las mismas migraciones de Flyway que se despliegan, y una clave fija de
 pruebas.
+
+```bash
+node --test "frontend/test/*.test.js"
+```
 
 ## Documentación
 
@@ -101,6 +106,7 @@ pruebas.
 - [ADR-0003 — No almacenar datos bancarios identificativos](docs/adr/ADR-0003-no-almacenar-datos-bancarios.md)
 - [ADR-0004 — Los programas de ayuda son datos, no código](docs/adr/ADR-0004-programas-de-ayuda-como-datos.md)
 - [ADR-0005 — Autenticación con JWT y refresco rotatorio](docs/adr/ADR-0005-autenticacion-con-jwt.md)
+- [ADR-0006 — Frontend sin framework ni compilación](docs/adr/ADR-0006-frontend-sin-framework.md)
 - [Flujo de trabajo Git](docs/GIT_WORKFLOW.md)
 - [Seguridad y cumplimiento](docs/SECURITY.md)
 - [OWASP API Security Top 10 (2023)](docs/OWASP-API-SECURITY.md)

@@ -1,6 +1,7 @@
 package com.gastos.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -66,6 +67,29 @@ class ApiHardeningTest extends ApiTestSupport {
                 .andExpect(header().string("Referrer-Policy", "no-referrer"))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(header().exists("Content-Security-Policy"));
+    }
+
+    @Test
+    @DisplayName("API8: el sondeo previo de CORS se responde sin exigir token")
+    void corsPreflightIsAnswered() throws Exception {
+        // El navegador manda este OPTIONS antes de cualquier POST con JSON, y llega SIN
+        // cabecera Authorization. Si la cadena de seguridad lo rechazara con 401, el
+        // frontend no podria ni iniciar sesion.
+        mockMvc.perform(options("/api/v1/auth/login")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    @DisplayName("API8: un origen no autorizado no recibe cabeceras CORS")
+    void unknownOriginIsNotAllowed() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/login")
+                        .header("Origin", "http://sitio-ajeno.example")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
