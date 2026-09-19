@@ -41,6 +41,9 @@
     </p>
   </noscript>
 
+  <!-- Antes que el modulo a proposito: los modulos van diferidos, asi que cuando
+       app.js se evalua la configuracion ya esta puesta. -->
+  <script src="/config.js"></script>
   <script type="module" src="/src/app.js"></script>
 </body>
 </html>

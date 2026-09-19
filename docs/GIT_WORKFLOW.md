@@ -79,4 +79,4 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | 8 | `feature/mortgage-ui` | Integrada | Herramienta de hipoteca: deslizadores, catálogo de programas y veredicto. |
 | 9 | `feature/password-reset` | **Actual** | Restablecimiento por correo con Brevo, cambio de contraseña y pantalla de cuenta. |
 | 10 | `feature/passkeys` | Hecho | WebAuthn como alternativa a la contraseña. Encajó encima de JWT sin rehacer nada, como se preveía. |
-| 11 | `chore/deployment-pipeline` | Siguiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
+| 11 | `chore/deployment-pipeline` | Hecho | CI con imagen y revisión de dependencias, Dependabot, digests fijados, `fly.toml`, script de preparación del frontend y [manual de despliegue](DESPLIEGUE.md). Falta ejecutarlo de verdad contra las cuentas. |

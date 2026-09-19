@@ -1,0 +1,47 @@
+# Despliegue de la API en Fly.io.
+#
+#   fly deploy
+#
+# Va en la raíz y no en infra/ a propósito: Fly usa el directorio de este fichero como
+# contexto de construcción, y el Dockerfile copia `pom.xml` y `backend/`, que están aquí.
+#
+# El nombre de la aplicación y la región son lo único que conviene cambiar. El resto
+# está ajustado a la capa gratuita; el procedimiento completo, con los secretos que hay
+# que poner, está en docs/DESPLIEGUE.md.
+
+app = "gastos-api"
+primary_region = "mad"
+
+[build]
+  dockerfile = "infra/Dockerfile"
+
+[env]
+  PORT = "8080"
+  # Ajustado a los 512 MB de la máquina. Serial GC y compilación de nivel 1 porque con
+  # dos usuarios no hay concurrencia que justifique el coste en memoria de G1 ni el
+  # calentamiento del compilador C2.
+  JAVA_OPTS = "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+
+[http_service]
+  internal_port = 8080
+  # La API nunca debe hablar por HTTP: sin TLS el token de acceso viaja en claro.
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # Escala a cero cuando nadie la usa, que es la mayor parte del día. El precio es un
+  # arranque en frío de unos segundos en la primera petición; la PWA lo disimula porque
+  # su armazón se sirve desde la caché del service worker.
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    # 40 segundos de gracia: Spring Boot arranca y Flyway migra antes de responder.
+    grace_period = "40s"
+    interval = "30s"
+    method = "GET"
+    path = "/actuator/health"
+    timeout = "5s"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
