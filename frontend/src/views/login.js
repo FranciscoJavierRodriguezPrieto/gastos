@@ -1,5 +1,6 @@
 import { api, ApiError } from '../api/client.js';
 import { session } from '../api/session.js';
+import { PasskeyError, entrarConPasskey, soportaPasskeys } from '../api/webauthn.js';
 import { campo, el, error as bloqueError } from '../ui/dom.js';
 
 /**
@@ -87,6 +88,7 @@ function formularioAcceso(alEntrar, alOlvidar) {
     },
   }, [
     marca('Las cuentas de casa'),
+    accesoConPasskey(alEntrar, aviso),
     correo,
     clave,
     aviso,
@@ -97,6 +99,48 @@ function formularioAcceso(alEntrar, alOlvidar) {
   ]);
 
   return formulario;
+}
+
+/**
+ * Botón de passkey, sólo si el navegador puede con ellas.
+ *
+ * Va **antes** del formulario porque, para quien tenga una registrada, es la vía rápida:
+ * un toque y dentro, sin escribir el correo. Quien no la tenga sigue teniendo el
+ * formulario justo debajo, sin haber perdido nada.
+ */
+function accesoConPasskey(alEntrar, aviso) {
+  if (!soportaPasskeys()) {
+    return null;
+  }
+
+  const boton = el('button', { class: 'boton boton--passkey', type: 'button' },
+    'Entrar con passkey');
+
+  boton.addEventListener('click', async () => {
+    aviso.replaceChildren();
+    boton.disabled = true;
+    boton.textContent = 'Esperando al dispositivo...';
+    try {
+      session.start(await entrarConPasskey());
+      await alEntrar();
+      return;
+    } catch (e) {
+      const mensaje = e instanceof PasskeyError
+        ? e.message
+        : (e instanceof ApiError && e.status === 401
+          ? 'Esa passkey no vale para esta aplicación'
+          : 'No se puede conectar con el servidor');
+      aviso.replaceChildren(bloqueError(mensaje));
+    } finally {
+      boton.disabled = false;
+      boton.textContent = 'Entrar con passkey';
+    }
+  });
+
+  return el('div', { class: 'login__passkey' }, [
+    boton,
+    el('p', { class: 'login__separador', text: 'o con tu contraseña' }),
+  ]);
 }
 
 function formularioAlta(alEntrar) {

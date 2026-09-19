@@ -112,6 +112,55 @@ equipo desbloqueado no pueda apoderarse de la cuenta.
 
 ---
 
+## 4 bis. Passkeys: entrar con la huella
+
+Una passkey sustituye a escribir la contraseña. Lo que guarda el servidor es sólo la
+**clave pública**: la privada no sale nunca del dispositivo, así que ni siquiera alguien
+con toda la base de datos podría suplantarte.
+
+**No sustituye a la contraseña**, convive con ella. Perder el móvil no puede dejarte
+fuera de las cuentas de casa, y aquí no hay soporte al que llamar.
+
+### Darla de alta
+
+1. **Tu cuenta**, desde el pie de la navegación.
+2. En **Passkeys**, ponle un nombre con el que reconocer el aparato (`iPhone de Javi`).
+3. **Añadir passkey** y confirma con la huella, la cara o el PIN.
+
+Para entrar, luego, basta con **«Entrar con passkey»** en la pantalla de acceso: no hay
+que escribir el correo.
+
+### Dos parámetros que hay que acertar al desplegar
+
+| Variable | Qué es | Ejemplo |
+|---|---|---|
+| `WEBAUTHN_RP_ID` | **Dominio del frontend**, no el de la API | `gastos.example.com` |
+| `WEBAUTHN_ORIGINS` | Direcciones completas, con esquema y puerto | `https://gastos.example.com` |
+
+**El error clásico es poner en `WEBAUTHN_RP_ID` el dominio de la API.** Si la aplicación
+está en `gastos.example.com` y la API en `api.example.com`, el valor es `gastos.example.com`
+(o `example.com`). Con el valor equivocado el navegador rechaza la ceremonia **sin decir
+por qué**: el botón parece no hacer nada.
+
+Si no se define `WEBAUTHN_ORIGINS`, se toma el valor de `CORS_ALLOWED_ORIGINS`, que en la
+práctica son las mismas direcciones.
+
+### Lo que hay que saber
+
+- **Fuera de `localhost` hace falta HTTPS.** No es una recomendación: sin contexto seguro
+  el navegador ni siquiera ofrece la API. Por eso el botón se oculta en lugar de fallar.
+- **Cambiar de dominio invalida todas las passkeys.** Están atadas al `rp-id`; si mañana
+  la aplicación se muda, hay que volver a darlas de alta. La contraseña sigue valiendo,
+  que para eso está.
+- Cada persona ve y borra **sólo las suyas**, aunque compartáis hogar.
+- La lista dice si la passkey está **copiada en tu cuenta del dispositivo** o **sólo en
+  este dispositivo**. Piénsalo dos veces antes de borrar una de las segundas si es la
+  única que te queda.
+- Se exige verificación de usuario (huella, cara o PIN). Un móvil desbloqueado encima de
+  una mesa no abre las cuentas.
+
+---
+
 ## 5. Contraseñas: entre 12 y 128 caracteres
 
 **No se exigen mayúsculas, dígitos ni símbolos**, y es deliberado. Las reglas de
@@ -215,6 +264,9 @@ Ninguna de estas es cuestión de código: son de operación.
       pública. Sin ellos, el restablecimiento de contraseña no funciona.
 - [ ] **`connect-src` de la CSP** en `frontend/_headers`, apuntando al dominio real de
       la API.
+- [ ] **`WEBAUTHN_RP_ID`** con el dominio del frontend (no el de la API) y
+      **`WEBAUTHN_ORIGINS`** con la URL completa en `https://`. Sin esto las passkeys no
+      funcionan, y el navegador no explica por qué.
 - [ ] **Copia de seguridad** de la base de datos con alguna periodicidad.
 
 ---

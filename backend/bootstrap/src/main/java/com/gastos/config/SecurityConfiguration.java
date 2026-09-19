@@ -2,6 +2,7 @@ package com.gastos.config;
 
 import com.gastos.iam.domain.port.PasswordHasher;
 import com.gastos.security.JwtProperties;
+import com.gastos.security.WebAuthnProperties;
 import com.gastos.web.RateLimitFilter;
 import com.gastos.web.RateLimitProperties;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
@@ -44,7 +45,8 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
  */
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties({JwtProperties.class, RateLimitProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, RateLimitProperties.class,
+        WebAuthnProperties.class})
 public class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -54,7 +56,11 @@ public class SecurityConfiguration {
             "/api/v1/auth/refresh",
             "/api/v1/auth/logout",
             "/api/v1/auth/forgot-password",
-            "/api/v1/auth/reset-password"
+            "/api/v1/auth/reset-password",
+            // Las dos del acceso con passkey, y no pueden ser de otro modo: quien entra
+            // con passkey todavia no tiene token con el que autenticarse.
+            "/api/v1/auth/passkeys/authentication/options",
+            "/api/v1/auth/passkeys/authentication"
     };
 
     @Bean

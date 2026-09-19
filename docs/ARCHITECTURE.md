@@ -97,6 +97,11 @@ agregado. JPA necesita constructor vacío y setters, que es justo lo que un agre
 debe ofrecer, así que se mantienen separados y un mapper traduce. Cuesta una clase por
 agregado y a cambio el esquema de la base de datos no dicta las invariantes de negocio.
 
+**La criptografía WebAuthn vive detrás de un puerto.** `WebAuthnCeremony` habla en
+cadenas base64url y bytes opacos, y ninguna clase de WebAuthn4J cruza hacia `application`
+ni `domain`. El caso de uso decide a quién pertenece un reto y cuándo se gasta; la
+biblioteca sólo dice si una firma cuadra ([ADR-0007](adr/ADR-0007-passkeys-con-webauthn4j.md)).
+
 **El esquema lo gobierna Flyway, no Hibernate.** `ddl-auto: validate`: si una entidad y
 el esquema divergen, la aplicación no arranca. Mejor un fallo al desplegar que una
 columna ignorada en silencio.

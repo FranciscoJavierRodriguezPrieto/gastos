@@ -78,5 +78,5 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | 7 | `feature/pwa-shell` | Integrada | PWA instalable: acceso, sesión, navegación, service worker, y las pantallas de Resumen, Gastos y Cuentas. |
 | 8 | `feature/mortgage-ui` | Integrada | Herramienta de hipoteca: deslizadores, catálogo de programas y veredicto. |
 | 9 | `feature/password-reset` | **Actual** | Restablecimiento por correo con Brevo, cambio de contraseña y pantalla de cuenta. |
-| 10 | `feature/passkeys` | Siguiente | WebAuthn como alternativa a la contraseña. Encaja encima de JWT sin rehacer nada. |
-| 11 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
+| 10 | `feature/passkeys` | Hecho | WebAuthn como alternativa a la contraseña. Encajó encima de JWT sin rehacer nada, como se preveía. |
+| 11 | `chore/deployment-pipeline` | Siguiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |

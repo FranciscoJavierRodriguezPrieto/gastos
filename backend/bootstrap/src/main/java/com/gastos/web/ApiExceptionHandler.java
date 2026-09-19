@@ -2,6 +2,7 @@ package com.gastos.web;
 
 import com.gastos.iam.application.AuthenticateUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
+import com.gastos.iam.application.PasskeyUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
 import com.gastos.shared.domain.DomainException;
 import com.gastos.shared.domain.ResourceNotFoundException;
@@ -69,6 +70,29 @@ public class ApiExceptionHandler {
             RecoverAccessUseCase.InvalidResetTokenException e, HttpServletRequest request) {
         return ResponseEntity.badRequest()
                 .body(ApiError.of(400, "INVALID_RESET_TOKEN", e.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    /**
+     * La ceremonia WebAuthn no verifica.
+     *
+     * <p>Un solo cuerpo para todo: reto caducado, firma invalida, passkey desconocida o
+     * contador que delata un clonado. Detallarlo solo ayudaria a quien esta probando.</p>
+     */
+    @ExceptionHandler(PasskeyUseCase.InvalidPasskeyException.class)
+    public ResponseEntity<ApiError> handleInvalidPasskey(PasskeyUseCase.InvalidPasskeyException e,
+                                                         HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of(401, "UNAUTHORIZED", "No se ha podido verificar la passkey",
+                        request.getRequestURI()));
+    }
+
+    /** Esa passkey ya estaba dada de alta; el navegador deberia haberlo evitado. */
+    @ExceptionHandler(PasskeyUseCase.PasskeyAlreadyRegisteredException.class)
+    public ResponseEntity<ApiError> handlePasskeyDuplicada(
+            PasskeyUseCase.PasskeyAlreadyRegisteredException e, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiError.of(409, "PASSKEY_ALREADY_REGISTERED", e.getMessage(),
                         request.getRequestURI()));
     }
 

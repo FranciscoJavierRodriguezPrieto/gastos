@@ -5,11 +5,15 @@ import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
 import com.gastos.iam.application.AuthenticateUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
+import com.gastos.iam.application.PasskeyUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
 import com.gastos.iam.application.port.ResetTokenService;
+import com.gastos.iam.application.port.WebAuthnCeremony;
 import com.gastos.iam.application.port.TokenService;
 import com.gastos.iam.domain.port.EmailSender;
 import com.gastos.iam.domain.port.HouseholdRepository;
+import com.gastos.iam.domain.port.PasskeyChallengeRepository;
+import com.gastos.iam.domain.port.PasskeyCredentialRepository;
 import com.gastos.iam.domain.port.PasswordResetTokenRepository;
 import com.gastos.iam.domain.port.PasswordHasher;
 import com.gastos.iam.domain.port.RefreshTokenRepository;
@@ -80,6 +84,16 @@ public class UseCaseConfiguration {
                                                      Clock clock) {
         return new RecoverAccessUseCase(users, credentials, resetTokens, refreshTokens,
                 passwordHasher, resetTokenService, emailSender, clock);
+    }
+
+    @Bean
+    public PasskeyUseCase passkeyUseCase(UserRepository users,
+                                         PasskeyCredentialRepository credentials,
+                                         PasskeyChallengeRepository challenges,
+                                         WebAuthnCeremony ceremony,
+                                         AuthenticateUseCase authenticate,
+                                         Clock clock) {
+        return new PasskeyUseCase(users, credentials, challenges, ceremony, authenticate, clock);
     }
 
     @Bean

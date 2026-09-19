@@ -29,6 +29,14 @@ const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', {
   year: 'numeric',
 });
 
+const FECHA_CON_HORA = new Intl.DateTimeFormat('es-ES', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 const MES_LARGO = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' });
 
 export function euros(importe) {
@@ -51,6 +59,20 @@ export function fecha(iso) {
   }
   const [anio, mes, dia] = iso.split('-').map(Number);
   return FECHA_LARGA.format(new Date(anio, mes - 1, dia));
+}
+
+/**
+ * Marca de tiempo completa de la API (ISO-8601 con zona, `2026-09-19T08:30:00Z`).
+ *
+ * Distinta de `fecha()` a propósito: aquélla parte la cadena a mano justo para NO aplicar
+ * zona horaria, porque un día natural no la tiene. Aquí sí la hay, y hay que respetarla:
+ * el instante en que se usó una passkey sí ocurrió a una hora concreta.
+ */
+export function fechaHora(iso) {
+  if (!iso) {
+    return '';
+  }
+  return FECHA_CON_HORA.format(new Date(iso));
 }
 
 /** '2026-09' -> 'septiembre de 2026' */

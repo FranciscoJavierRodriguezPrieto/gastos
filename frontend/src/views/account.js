@@ -1,7 +1,8 @@
 import { api, ApiError } from '../api/client.js';
 import { session } from '../api/session.js';
+import { PasskeyError, registrarPasskey, soportaPasskeys } from '../api/webauthn.js';
 import { campo, cargando, el, error as bloqueError, tarjeta } from '../ui/dom.js';
-import { euros } from '../ui/format.js';
+import { euros, fechaHora } from '../ui/format.js';
 
 /**
  * Tu cuenta: quién eres, quién más está en el hogar y cambiar la contraseña.
@@ -25,6 +26,7 @@ export async function vistaCuenta(contenedor) {
       cabecera(),
       datosPersonales(yo),
       listaMiembros(miembros, yo),
+      tarjetaPasskeys(),
       formularioContrasena(),
     );
   } catch (e) {
@@ -75,6 +77,116 @@ function listaMiembros(miembros, yo) {
     : null;
 
   return tarjeta('Miembros del hogar', [el('ul', { class: 'lista' }, filas), ayuda]);
+}
+
+/**
+ * Passkeys registradas.
+ *
+ * Se pinta con su propia carga en lugar de esperar al resto de la pantalla: es una lista
+ * que cambia sola (al dar de alta, al borrar) y no tiene sentido que un fallo suyo deje
+ * sin ver los datos personales.
+ */
+function tarjetaPasskeys() {
+  const cuerpo = el('div', { class: 'passkeys' }, cargando());
+
+  const recargar = async () => {
+    try {
+      const passkeys = await api.get('/auth/passkeys');
+      cuerpo.replaceChildren(
+        passkeys.length === 0 ? sinPasskeys() : el('ul', { class: 'lista' },
+          passkeys.map((passkey) => filaPasskey(passkey, recargar))),
+        altaDePasskey(recargar),
+      );
+    } catch (e) {
+      cuerpo.replaceChildren(bloqueError(
+        e instanceof ApiError ? e.userMessage : 'No se pueden cargar tus passkeys'));
+    }
+  };
+  recargar();
+
+  return tarjeta('Passkeys', cuerpo);
+}
+
+function sinPasskeys() {
+  return el('p', { class: 'texto-apoyo', text:
+    'Todavía no tienes ninguna. Una passkey te deja entrar con la huella, la cara o el '
+    + 'PIN del dispositivo, sin escribir la contraseña. Tu contraseña sigue funcionando '
+    + 'igual: la passkey no la sustituye, se suma.' });
+}
+
+function filaPasskey(passkey, alCambiar) {
+  const detalle = [
+    passkey.lastUsedAt ? `Usada el ${fechaHora(passkey.lastUsedAt)}` : 'Sin usar todavía',
+    // Si sólo vive en ese aparato, perderlo es perder la passkey. Conviene saberlo antes
+    // de borrar la otra.
+    passkey.syncedToCloud ? 'Copiada en tu cuenta del dispositivo' : 'Sólo en este dispositivo',
+  ].join(' · ');
+
+  const borrar = el('button', { class: 'boton boton--sutil', type: 'button' }, 'Quitar');
+  borrar.addEventListener('click', async () => {
+    borrar.disabled = true;
+    try {
+      await api.delete(`/auth/passkeys/${passkey.id}`);
+      await alCambiar();
+    } catch {
+      borrar.disabled = false;
+      borrar.textContent = 'No se ha podido quitar';
+    }
+  });
+
+  return el('li', { class: 'movimiento' }, [
+    el('div', { class: 'movimiento__principal' }, [
+      el('span', { class: 'movimiento__concepto', text: passkey.label }),
+      el('span', { class: 'movimiento__meta', text: detalle }),
+    ]),
+    borrar,
+  ]);
+}
+
+function altaDePasskey(alCambiar) {
+  if (!soportaPasskeys()) {
+    return el('p', { class: 'texto-apoyo', text:
+      'Este navegador no admite passkeys. Prueba desde el móvil o desde un navegador '
+      + 'actualizado, y recuerda que fuera de localhost hace falta HTTPS.' });
+  }
+
+  const nombre = campo('etiquetaPasskey', 'Nombre del dispositivo', {
+    required: true, maxlength: 60, placeholder: 'iPhone de Javi',
+  });
+  const aviso = el('div', { class: 'formulario__aviso' });
+  const boton = el('button', { class: 'boton boton--principal', type: 'submit' },
+    'Añadir passkey');
+
+  return el('form', {
+    class: 'formulario',
+    novalidate: true,
+    onSubmit: async (evento) => {
+      evento.preventDefault();
+      aviso.replaceChildren();
+
+      const etiqueta = nombre.control.value.trim();
+      if (!etiqueta) {
+        aviso.replaceChildren(bloqueError('Ponle un nombre para reconocerlo luego'));
+        nombre.control.focus();
+        return;
+      }
+
+      boton.disabled = true;
+      boton.textContent = 'Esperando al dispositivo...';
+      try {
+        await registrarPasskey(etiqueta);
+        nombre.control.value = '';
+        await alCambiar();
+      } catch (e) {
+        aviso.replaceChildren(bloqueError(
+          e instanceof PasskeyError ? e.message
+            : (e instanceof ApiError ? e.userMessage : 'No se ha podido añadir la passkey')));
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Añadir passkey';
+      }
+    },
+  }, [nombre, aviso, boton]);
 }
 
 function formularioContrasena() {
