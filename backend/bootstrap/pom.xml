@@ -83,6 +83,24 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Verificacion WebAuthn (passkeys). Se fija la 0.30.3 y no la ultima a
+             proposito: a partir de la 0.31 la libreria salta a Jackson 3, que convive con
+             el Jackson 2 de Spring Boot pero obligaria a arrastrar dos arboles de
+             dependencias enteros dentro del mismo JAR. -->
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-core</artifactId>
+            <version>${webauthn4j.version}</version>
+        </dependency>
+        <!-- Emulador de autenticador: permite probar la ceremonia entera con firmas de
+             verdad, en vez de con un doble que diria que si a todo. -->
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-test</artifactId>
+            <version>${webauthn4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>

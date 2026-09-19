@@ -45,10 +45,25 @@ El riesgo número uno: pedir el recurso de otro cambiando un identificador.
 - **Restablecimiento por correo** con token opaco de un solo uso y 30 minutos de vida,
   guardado como hash. Pedirlo responde igual exista o no la cuenta; restablecer revoca
   todas las sesiones; pedir un enlace nuevo invalida el anterior.
+- **Passkeys (WebAuthn)** como alternativa a la contraseña. Lo que se guarda es la **clave
+  pública**: una base de datos robada no permite suplantar a nadie, cosa que con un hash
+  de contraseña no es cierta por bien elegido que esté el coste de BCrypt.
+  - Se exige `userVerification: required`, así que la passkey es posesión **y** biometría
+    o PIN: un dispositivo desbloqueado y abandonado no basta.
+  - El reto es de un solo uso y **se consume antes de verificar**, de modo que un fallo no
+    deja vivo un reto reutilizable. Repetir una respuesta capturada devuelve `401`.
+  - Un reto de alta no vale para el endpoint público de acceso, y va atado a su usuario.
+  - El contador de firmas se vigila para detectar credenciales clonadas, sin castigar a
+    las passkeys sincronizadas, que lo dejan siempre a cero.
+  - El identificador que recibe el autenticador son los 16 bytes del UUID, **nunca el
+    correo**: el dispositivo lo enseña al elegir cuenta.
 
 **Estado: hecho.** `AuthApiTest` (11 tests: rotación, reutilización, cierre de sesión,
 registro cerrado, credenciales indistinguibles), `PasswordResetApiTest` (11 tests del
-flujo de recuperación), `MortgageApiTest.tamperedTokenIsRejected`.
+flujo de recuperación), `PasskeyApiTest` (10 tests de la ceremonia completa contra un
+autenticador emulado que firma de verdad, incluidas repetición y firma manipulada),
+`PasskeyUseCaseTest` (10 tests de las reglas de retos y pertenencia),
+`MortgageApiTest.tamperedTokenIsRejected`.
 
 ---
 

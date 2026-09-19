@@ -12,12 +12,12 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 | Riesgo | Mitigación | Estado |
 |---|---|---|
 | **A01 Control de acceso roto (BOLA/IDOR)** | Identificadores UUID no enumerables; `HouseholdId` obligatorio en la firma de todos los puertos; doble comprobación en el agregado (`isAccessibleBy`) además de en la consulta. | Implementado en el dominio |
-| **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor. No se almacena ningún dato bancario identificativo, así que no hay nada que cifrar a nivel de columna. | Hecho por diseño ([ADR-0003](adr/ADR-0003-no-almacenar-datos-bancarios.md)) |
+| **A02 Fallos criptográficos** | TLS obligatorio en tránsito; cifrado en reposo del proveedor. No se almacena ningún dato bancario identificativo, así que no hay nada que cifrar a nivel de columna. De las passkeys sólo se guarda la **clave pública**: no hay secreto que robar. | Hecho por diseño ([ADR-0003](adr/ADR-0003-no-almacenar-datos-bancarios.md)) |
 | **A03 Inyección** | Sin SQL concatenado: Spring Data JPA con consultas derivadas y parámetros ligados; validación de invariantes en el constructor de cada value object (`Guard`, `Email`, `Money`). | Validación de dominio hecha |
 | **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
 | **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
 | **A06 Componentes vulnerables** | Dependabot y `mvn dependency-check` en CI; BOM de Spring Boot para versiones coherentes. | Pendiente: `chore/deployment-pipeline` |
-| **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md)); Passkeys en rama aparte |
+| **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto; **passkeys (WebAuthn)** con verificación de usuario obligatoria y retos de un solo uso. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md), [ADR-0007](adr/ADR-0007-passkeys-con-webauthn4j.md)) |
 | **A08 Fallos de integridad** | Dependencias con versión fijada; imágenes Docker por digest; CI que verifica el build. | Parcial |
 | **A09 Fallos de registro y monitorización** | `DomainException` con mensajes de negocio, sin datos personales en las trazas; logs estructurados con identificador de correlación. | Parcial |
 | **A10 SSRF** | La única petición saliente es al relé SMTP, cuya dirección viene de la configuración y nunca del usuario. | No aplica |

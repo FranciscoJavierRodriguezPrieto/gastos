@@ -85,9 +85,17 @@ class MortgageApiTest extends ApiTestSupport {
     @Test
     @DisplayName("con un token manipulado la simulacion responde 401")
     void tamperedTokenIsRejected() throws Exception {
-        // Se altera el ultimo caracter: la firma deja de cuadrar.
-        String tampered = TOKEN.substring(0, TOKEN.length() - 1)
-                + (TOKEN.endsWith("a") ? "b" : "a");
+        // Se altera el PRIMER caracter de la firma, no el ultimo.
+        //
+        // Una firma HS256 son 32 bytes = 256 bits, que en base64url ocupan 43 caracteres
+        // = 258 bits: del ultimo caracter solo cuentan dos. Cambiarlo daba los mismos 32
+        // bytes una de cada cuatro veces, el token seguia siendo valido y este test
+        // —que existe para comprobar justo lo contrario— pasaba sin comprobar nada.
+        int inicioDeLaFirma = TOKEN.lastIndexOf('.') + 1;
+        char primero = TOKEN.charAt(inicioDeLaFirma);
+        String tampered = TOKEN.substring(0, inicioDeLaFirma)
+                + (primero == 'A' ? 'B' : 'A')
+                + TOKEN.substring(inicioDeLaFirma + 1);
 
         mockMvc.perform(post("/api/v1/mortgage/simulations")
                         .header(AUTHORIZATION, tampered)

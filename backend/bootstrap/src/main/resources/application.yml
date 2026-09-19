@@ -135,6 +135,19 @@ gastos:
     # En Brevo tiene que ser un remitente verificado o el envio se rechaza.
     from: ${MAIL_FROM:gastos@localhost}
 
+  webauthn:
+    # OJO: es el dominio del FRONTEND, no el de la API. Si la aplicacion se sirve en
+    # gastos.example.com, aqui va eso (o example.com). Poner el dominio de la API hace
+    # que el navegador rechace la ceremonia sin dar explicaciones.
+    rp-id: ${WEBAUTHN_RP_ID:localhost}
+    rp-name: Gastos
+    # Direcciones completas, con esquema y puerto. Fuera de localhost el navegador exige
+    # HTTPS, asi que en produccion siempre empiezan por https://.
+    origins: ${WEBAUTHN_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5173}}
+    # Cinco minutos: una passkey puede estar en otro aparato, y entre leer el codigo QR,
+    # desbloquear el movil y confirmar se va facilmente un minuto.
+    ttl: 5m
+
   rate-limit:
     enabled: true
     max-requests: 120

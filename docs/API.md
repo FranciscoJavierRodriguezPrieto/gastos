@@ -28,6 +28,32 @@ cliente pueda escribir.
 | `GET` | `/auth/members` | no | Miembros del hogar. |
 | `POST` | `/auth/members` | no | Da de alta al segundo conviviente. **Sólo el `OWNER`**; un `MEMBER` recibe `403`. |
 
+### Passkeys (WebAuthn)
+
+| Método | Ruta | Público | Descripción |
+|---|---|---|---|
+| `POST` | `/auth/passkeys/registration/options` | no | Parámetros y reto para `navigator.credentials.create()`. |
+| `POST` | `/auth/passkeys/registration` | no | Guarda la passkey si la respuesta verifica. `201`. |
+| `POST` | `/auth/passkeys/authentication/options` | sí | Reto para `navigator.credentials.get()`. |
+| `POST` | `/auth/passkeys/authentication` | sí | Entra con la passkey. Devuelve **los mismos tokens que `/auth/login`**. |
+| `GET` | `/auth/passkeys` | no | Las passkeys propias. |
+| `DELETE` | `/auth/passkeys/{id}` | no | Da de baja una passkey **propia**. Una ajena responde `404`. |
+
+Todo lo binario viaja en **base64url sin relleno**, que es lo que produce y espera el
+navegador.
+
+El alta exige sesión iniciada; el acceso no puede exigirla, porque quien entra con passkey
+todavía no tiene token. Un reto emitido para una ceremonia **no sirve para la otra**, y el
+de alta va además atado a su usuario.
+
+El reto se **consume antes de verificar**: un fallo no deja vivo un reto con el que
+reintentar. Repetir una respuesta capturada devuelve `401`.
+
+La respuesta del listado no incluye ni el identificador de la credencial ni la clave
+pública: para reconocer y quitar un dispositivo bastan el nombre y las fechas (API3).
+
+Razones del diseño en [ADR-0007](adr/ADR-0007-passkeys-con-webauthn4j.md).
+
 **Token de acceso:** JWT firmado, 15 minutos, no revocable.
 **Token de refresco:** cadena opaca, 30 días, revocable. Se entrega una sola vez y en base
 de datos sólo queda su hash.
@@ -37,6 +63,9 @@ un token robado: si reaparece uno consumido, caen todos.
 
 **Restablecer o cambiar la contraseña revoca todas las sesiones.** El token del enlace
 dura 30 minutos, sirve una sola vez, y pedir uno nuevo invalida el anterior.
+
+**La passkey no sustituye a la contraseña.** Convive con ella: es el camino rápido del día
+a día, y la contraseña se queda como vía de recuperación si se pierde el dispositivo.
 
 Las razones de este diseño están en [ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md).
 
