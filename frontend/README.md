@@ -41,14 +41,19 @@ docker compose -f infra/docker-compose.yml up --build
 
 El puerto 5173 no es casual: es el origen que la API trae autorizado en CORS por defecto.
 
-Se puede servir con cualquier cosa (`python -m http.server 5173 -d frontend`), pero
-**conviene usar el contenedor**: un servidor de estáticos cualquiera no manda
-`Cache-Control` ni la CSP, así que el navegador se queda con la versión anterior de los
-ficheros que edites y encima no estás probando las cabeceras de seguridad reales.
+Sin Docker, hay un servidor equivalente que manda **las mismas cabeceras**:
 
-Y si lo lanzas, **acuérdate de pararlo**. Un servidor suelto en el 5173 le gana el puerto
-al contenedor sin que Docker dé ningún error, y se pasa un buen rato buscando por qué los
-cambios no aparecen.
+```bash
+node scripts/servir-frontend.mjs
+```
+
+**No uses `python -m http.server`.** No manda `Cache-Control` ni CSP, y las dos cosas
+muerden: el navegador se queda con la versión anterior de lo que edites, y no estás
+probando la política que sí se aplica en producción. Las barras de distribución y de DTI
+salían vacías desplegadas por culpa de eso y en local no se veía.
+
+Y si lanzas algo suelto en el 5173, **acuérdate de pararlo**: le gana el puerto al
+contenedor sin que Docker dé ningún error.
 
 ## Tests
 
