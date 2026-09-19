@@ -46,3 +46,15 @@ Arquitectura de despliegue en tres piezas:
 - **Pendiente de verificar:** las condiciones de las capas gratuitas cambian con
   frecuencia. Antes de fijar esta decisión hay que hacer un despliegue real de prueba
   y medir consumo y arranque en frío.
+
+## Estado a 2026-09-19 (rama `chore/deployment-pipeline`)
+
+Todo lo que se puede preparar sin tener las cuentas está hecho: `fly.toml` ajustado a
+512 MB con escalado a cero, `scripts/preparar-frontend.mjs` para que la PWA apunte a la
+API sin editar ficheros a mano, un workflow de despliegue manual y el procedimiento
+completo en [DESPLIEGUE.md](../DESPLIEGUE.md).
+
+**La decisión sigue en estado Propuesta**, y seguirá así hasta que haya un despliegue de
+verdad. Preparar los ficheros no demuestra que la capa gratuita de Fly siga siendo como
+se describe en la tabla de arriba, ni cuánto tarda en frío la combinación Fly + Neon,
+que son las dos cosas que este ADR decía que había que medir.

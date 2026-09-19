@@ -9,6 +9,7 @@ exactamente los ficheros que hay en este directorio. El porqué está en
 ```
 frontend/
 ├── index.html          armazón de la página
+├── config.js           dirección de la API, leída en tiempo de ejecución
 ├── manifest.webmanifest
 ├── sw.js               service worker: arranque sin conexión
 ├── _headers            cabeceras para Cloudflare Pages (CSP incluida)
@@ -25,6 +26,11 @@ frontend/
 La raíz que se sirve es `frontend/` tal cual: no hay carpeta `dist` ni `public` porque no
 hay nada que construir.
 
+Para **desplegar** sí se genera un `dist/`, pero no es una compilación: el script
+`scripts/preparar-frontend.mjs` copia esta carpeta y cambia dos valores —la dirección de
+la API en `config.js` y el `connect-src` de la CSP en `_headers`— que tienen que
+coincidir entre sí. Lo que se publica sigue siendo, línea por línea, lo que hay aquí.
+
 ## Arrancar
 
 Con todo en Docker, la aplicación queda en <http://localhost:5173>:
@@ -33,18 +39,27 @@ Con todo en Docker, la aplicación queda en <http://localhost:5173>:
 docker compose -f infra/docker-compose.yml up --build
 ```
 
-Con la API por separado, cualquier servidor de estáticos vale:
-
-```bash
-python -m http.server 5173 -d frontend
-```
-
 El puerto 5173 no es casual: es el origen que la API trae autorizado en CORS por defecto.
+
+Se puede servir con cualquier cosa (`python -m http.server 5173 -d frontend`), pero
+**conviene usar el contenedor**: un servidor de estáticos cualquiera no manda
+`Cache-Control` ni la CSP, así que el navegador se queda con la versión anterior de los
+ficheros que edites y encima no estás probando las cabeceras de seguridad reales.
+
+Y si lo lanzas, **acuérdate de pararlo**. Un servidor suelto en el 5173 le gana el puerto
+al contenedor sin que Docker dé ningún error, y se pasa un buen rato buscando por qué los
+cambios no aparecen.
 
 ## Tests
 
 ```bash
 node --test "frontend/test/*.test.js"
+```
+
+Y los del script de despliegue, que también corren en CI:
+
+```bash
+node --test "scripts/test/*.test.js"
 ```
 
 Se prueba la lógica de sesión y del cliente HTTP, que es donde de verdad se puede meter la

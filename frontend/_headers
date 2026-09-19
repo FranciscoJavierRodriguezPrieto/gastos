@@ -8,8 +8,10 @@
   # Nada de terceros. Sin 'unsafe-inline' ni 'unsafe-eval': el código es todo propio y
   # en módulos, así que no hace falta ninguna de las dos.
   #
-  # OJO AL DESPLEGAR: connect-src tiene que apuntar al dominio real de la API. Con el
-  # valor de desarrollo, la aplicación desplegada no podrá hablar con el servidor.
+  # connect-src lleva el valor de desarrollo. Al desplegar lo reescribe
+  # scripts/preparar-frontend.mjs, que ajusta a la vez este valor y el de config.js:
+  # si sólo se cambiara uno, la aplicación llamaría a la API y el navegador bloquearía
+  # la petición sin que nada en el servidor lo delatara.
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8080; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

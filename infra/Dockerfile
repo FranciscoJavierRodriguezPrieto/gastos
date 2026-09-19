@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1
 
+# Las imagenes base van fijadas por DIGEST y no solo por etiqueta. Una etiqueta se puede
+# reapuntar a otro contenido sin avisar; un digest no. Dependabot abre PR cuando salen
+# versiones nuevas, asi que fijarlo no significa quedarse atras.
+
 # ---------- Etapa de construcción ----------
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-21@sha256:c2a2c58516d160f43b50f12baa427ca86989e0bc942609e04aff61da5d9a7d74 AS build
 WORKDIR /build
 
 # Las dependencias se resuelven en una capa aparte para que un cambio de código
@@ -19,7 +23,7 @@ COPY backend backend
 RUN mvn -B -q clean package
 
 # ---------- Etapa de ejecución ----------
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:21-jre-alpine@sha256:1a29e1fe337eb28b5bec30f0ee8ed29f0ff80ab6f75dcf9313efe82911065a52 AS runtime
 
 # Privilegio mínimo: el proceso nunca corre como root (CCN-STIC-812).
 RUN addgroup -S gastos && adduser -S gastos -G gastos

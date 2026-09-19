@@ -1,0 +1,65 @@
+name: Desplegar
+
+# Sólo a mano, nunca automático.
+#
+# Es deliberado: a día de hoy `main` sigue en el commit inicial y nada se ha publicado
+# todavía. Cuando haya un despliegue de verdad funcionando y se decida que `main` es
+# producción, basta añadir aquí `push: branches: [main]`.
+on:
+  workflow_dispatch:
+    inputs:
+      que:
+        description: Qué desplegar
+        required: true
+        default: ambos
+        type: choice
+        options: [api, frontend, ambos]
+      url_api:
+        description: URL pública de la API (necesaria para el frontend)
+        required: true
+        default: https://gastos-api.fly.dev
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API en Fly.io
+    if: inputs.que == 'api' || inputs.que == 'ambos'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # Los secretos de la aplicación (JWT_SECRET, base de datos, correo) NO se pasan
+      # aquí: viven en `fly secrets`, se ponen una vez y no pasan por el registro de
+      # ejecuciones de GitHub. Ver docs/DESPLIEGUE.md.
+      - name: fly deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  frontend:
+    name: PWA en Cloudflare Pages
+    if: inputs.que == 'frontend' || inputs.que == 'ambos'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Ajusta a la vez config.js y el connect-src de la CSP. Si alguno de los dos
+      # ficheros hubiera cambiado de forma, el script falla aquí en lugar de publicar
+      # algo que no carga.
+      - name: Preparar el frontend
+        run: node scripts/preparar-frontend.mjs "${{ inputs.url_api }}"
+
+      - name: Publicar
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=gastos

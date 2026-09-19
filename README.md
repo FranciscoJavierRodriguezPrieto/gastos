@@ -6,12 +6,16 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/password-reset`: backend completo, **PWA instalable con las cuatro
-pantallas** —incluida la herramienta de hipoteca con deslizadores y catálogo de programas
-editable— y **restablecimiento de contraseña por correo**. 146 tests de backend y 13 de
-frontend.
+Aplicación funcionalmente completa: backend, **PWA instalable con las cuatro pantallas**
+—incluida la herramienta de hipoteca con deslizadores y catálogo de programas editable—,
+**restablecimiento de contraseña por correo** y **acceso con passkey (WebAuthn)**.
+**177 tests de backend y 31 de frontend y scripts.**
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
+
+**Todavía no está desplegado.** Los ficheros y el procedimiento están listos
+([DESPLIEGUE.md](docs/DESPLIEGUE.md)); falta ejecutarlo contra cuentas reales de Fly.io,
+Neon y Cloudflare.
 
 El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
@@ -37,6 +41,7 @@ El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 | Base de datos | PostgreSQL (Neon en producción) |
 | Seguridad | Spring Security, JWT HS256, BCrypt ([ADR-0005](docs/adr/ADR-0005-autenticacion-con-jwt.md)) |
 | Frontend | PWA sin framework ni compilación ([ADR-0006](docs/adr/ADR-0006-frontend-sin-framework.md)) |
+| Passkeys | WebAuthn4J tras un puerto ([ADR-0007](docs/adr/ADR-0007-passkeys-con-webauthn4j.md)) |
 | Despliegue | Fly.io + Neon + Cloudflare Pages ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
 
 ## Estructura
@@ -52,7 +57,9 @@ gastos/
 │   └── bootstrap/       raíz de composición y artefacto ejecutable
 ├── frontend/            PWA: pantallas, cliente de la API y service worker
 ├── infra/               Dockerfile y docker-compose
-└── docs/                arquitectura, ADR, flujo Git, seguridad
+├── scripts/             preparación del frontend para desplegar
+├── fly.toml             despliegue de la API en Fly.io
+└── docs/                arquitectura, ADR, flujo Git, seguridad, despliegue
 ```
 
 ## Arrancar en local

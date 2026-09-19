@@ -1,0 +1,48 @@
+# Actualizacion automatica de dependencias.
+#
+# Es lo que hace sostenible fijar las imagenes de Docker por digest: el digest no se
+# mueve solo, asi que sin esto quedarse clavado en una version con vulnerabilidades seria
+# cuestion de meses. Aqui las actualizaciones llegan como PR, con su changelog, y pasan
+# por el mismo CI que cualquier otro cambio.
+#
+# Semanal y no diario: con dos personas y un proyecto de este tamano, un PR al dia seria
+# ruido que se acaba ignorando, y una alerta que se ignora no protege de nada.
+
+version: 2
+
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    target-branch: develop
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Spring Boot mueve decenas de artefactos a la vez; agruparlos evita cinco PR que
+      # solo tienen sentido juntos.
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Imagenes base del Dockerfile y del compose.
+  - package-ecosystem: docker
+    directory: "/infra"
+    schedule:
+      interval: weekly
+      day: monday
+    target-branch: develop
+    commit-message:
+      prefix: "chore(docker)"

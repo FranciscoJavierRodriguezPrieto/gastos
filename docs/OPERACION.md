@@ -252,7 +252,8 @@ Todavía no hay nada automatizado. Ver el apartado de pendientes.
 
 ## 9. Antes de exponerlo a internet
 
-Ninguna de estas es cuestión de código: son de operación.
+El procedimiento paso a paso está en [DESPLIEGUE.md](DESPLIEGUE.md). Esta es la lista de
+comprobación; ninguna es cuestión de código, son de operación.
 
 - [ ] **TLS obligatorio.** Sin HTTPS, el token de acceso viaja en claro y todo lo demás
       da igual. La aplicación no termina TLS por sí misma: depende de la plataforma.
@@ -276,6 +277,8 @@ Ninguna de estas es cuestión de código: son de operación.
 Cosas que hoy **no** existen y que pueden morder:
 
 - **No hay copia de seguridad automática.**
+- **Nada se ha desplegado todavía.** Los ficheros y el procedimiento están listos, pero
+  la primera ejecución real está por hacer.
 - **No hay pantalla para dar de alta al segundo conviviente**; hoy sólo por API.
 - **No hay expulsión de sesiones** desde una pantalla: revocar exige llamar a `logout`
   con el token de refresco correspondiente, o borrar filas de `refresh_token`.
