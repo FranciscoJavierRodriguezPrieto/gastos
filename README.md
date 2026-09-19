@@ -6,9 +6,10 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/mortgage-ui`: backend completo y **PWA instalable con las cuatro
-pantallas** funcionando, incluida la herramienta de hipoteca con deslizadores, catálogo
-de programas editable y veredicto de viabilidad. 135 tests de backend y 13 de frontend.
+Rama `feature/password-reset`: backend completo, **PWA instalable con las cuatro
+pantallas** —incluida la herramienta de hipoteca con deslizadores y catálogo de programas
+editable— y **restablecimiento de contraseña por correo**. 146 tests de backend y 13 de
+frontend.
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 

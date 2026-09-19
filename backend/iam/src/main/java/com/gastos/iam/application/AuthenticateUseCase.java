@@ -137,8 +137,14 @@ public class AuthenticateUseCase {
                 });
     }
 
-    /** Emite la pareja de tokens para un usuario ya verificado. */
-    AuthenticationResult issueTokensFor(User user) {
+    /**
+     * Emite la pareja de tokens para un usuario ya verificado.
+     *
+     * <p>Publico porque lo usan tambien el alta del hogar y el restablecimiento de
+     * contrasena: en los tres casos la identidad ya se ha comprobado antes de llamar, y
+     * duplicar la emision en cada sitio seria peor.</p>
+     */
+    public AuthenticationResult issueTokensFor(User user) {
         Instant now = clock.instant();
         String rawRefreshToken = tokenService.newRefreshToken();
 

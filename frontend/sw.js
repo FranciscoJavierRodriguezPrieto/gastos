@@ -15,7 +15,7 @@
  * sin forma evidente de salir de ahí. Los iconos sí van de caché, porque no cambian.
  */
 
-const VERSION = 'gastos-v3';
+const VERSION = 'gastos-v4';
 
 const ARMAZON = [
   '/',
@@ -30,6 +30,8 @@ const ARMAZON = [
   '/src/views/accounts.js',
   '/src/views/expenses.js',
   '/src/views/login.js',
+  '/src/views/recover.js',
+  '/src/views/account.js',
   '/src/views/mortgage.js',
   '/src/views/programs.js',
   '/src/views/summary.js',

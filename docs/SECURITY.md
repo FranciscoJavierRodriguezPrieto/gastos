@@ -20,7 +20,7 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 | **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md)); Passkeys en rama aparte |
 | **A08 Fallos de integridad** | Dependencias con versión fijada; imágenes Docker por digest; CI que verifica el build. | Parcial |
 | **A09 Fallos de registro y monitorización** | `DomainException` con mensajes de negocio, sin datos personales en las trazas; logs estructurados con identificador de correlación. | Parcial |
-| **A10 SSRF** | La aplicación no realiza peticiones salientes a URLs controladas por el usuario. | No aplica |
+| **A10 SSRF** | La única petición saliente es al relé SMTP, cuya dirección viene de la configuración y nunca del usuario. | No aplica |
 
 Frente a **XSS** el frontend escapa por defecto y se sirve con una CSP restrictiva;
 frente a **CSRF**, la API es *stateless* con token en cabecera `Authorization` (no en
@@ -54,6 +54,7 @@ cookie), lo que elimina el vector; si en algún momento se usaran cookies, serí
 Lo que **no** está hecho todavía, para que la deuda sea visible:
 
 - **Passkeys (WebAuthn)**, comprometidas como rama aparte.
+- **Pantalla de alta del segundo conviviente**; hoy sólo por API.
 - **Cabeceras de seguridad del frontend** (CSP del cliente), que llegan con la PWA.
 - **TLS**: la aplicación no termina TLS por sí misma; depende de la plataforma de
   despliegue. Sin TLS, el token de acceso viaja en claro y todo lo demás da igual.

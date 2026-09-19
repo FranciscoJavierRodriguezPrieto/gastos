@@ -13,7 +13,7 @@ import { campo, el, error as bloqueError } from '../ui/dom.js';
  *
  * Al usuario no se le pide que elija: la pantalla ya sabe cuál toca.
  */
-export async function vistaLogin(contenedor, { alEntrar }) {
+export async function vistaLogin(contenedor, { alEntrar, alOlvidar }) {
   const marco = el('div', { class: 'login' });
   contenedor.replaceChildren(marco);
 
@@ -27,7 +27,9 @@ export async function vistaLogin(contenedor, { alEntrar }) {
     necesitaAlta = false;
   }
 
-  marco.replaceChildren(necesitaAlta ? formularioAlta(alEntrar) : formularioAcceso(alEntrar));
+  marco.replaceChildren(necesitaAlta
+    ? formularioAlta(alEntrar)
+    : formularioAcceso(alEntrar, alOlvidar));
 }
 
 function marca(subtitulo) {
@@ -38,7 +40,7 @@ function marca(subtitulo) {
   ]);
 }
 
-function formularioAcceso(alEntrar) {
+function formularioAcceso(alEntrar, alOlvidar) {
   const correo = campo('email', 'Correo', {
     type: 'email',
     required: true,
@@ -83,7 +85,16 @@ function formularioAcceso(alEntrar) {
         boton.textContent = 'Entrar';
       }
     },
-  }, [marca('Las cuentas de casa'), correo, clave, aviso, boton]);
+  }, [
+    marca('Las cuentas de casa'),
+    correo,
+    clave,
+    aviso,
+    boton,
+    el('button', {
+      class: 'boton boton--sutil', type: 'button', onClick: alOlvidar,
+    }, 'He olvidado mi contraseña'),
+  ]);
 
   return formulario;
 }
