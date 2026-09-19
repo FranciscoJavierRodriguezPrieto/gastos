@@ -7,6 +7,9 @@
  * Regla que no se rompe: **nunca se usa innerHTML con datos**. Todo texto entra por
  * textContent, que escapa por definición. Un alias de cuenta con `<script>` dentro es
  * texto y se ve como texto.
+ *
+ * Los estilos calculados se pasan como objeto (`style: { width: '40%' }`) y se aplican
+ * por el CSSOM, nunca como cadena en el atributo: la CSP prohíbe los estilos en línea.
  */
 
 /**
@@ -31,6 +34,12 @@ export function el(etiqueta, atributos = {}, hijos = []) {
       nodo.textContent = valor;
     } else if (clave === 'dataset') {
       Object.assign(nodo.dataset, valor);
+    } else if (clave === 'style') {
+      // Se aplica por el CSSOM y NO con setAttribute('style', ...). La CSP lleva
+      // `style-src 'self'` sin 'unsafe-inline', que bloquea el atributo style: las
+      // barras de distribución y las de DTI se quedaban con ancho cero, sin más aviso
+      // que una línea en la consola. Por el CSSOM la política no se toca.
+      Object.assign(nodo.style, valor);
     } else {
       nodo.setAttribute(clave, valor === true ? '' : String(valor));
     }

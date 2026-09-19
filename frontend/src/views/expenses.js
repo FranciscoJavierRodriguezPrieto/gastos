@@ -98,7 +98,7 @@ function desglose(porCategoria, total) {
       .map((c) => `${c.label}, ${euros(c.amount)}`).join('; ')}`,
   }, porCategoria.map((categoria, indice) => el('span', {
     class: `barra-apilada__tramo barra-apilada__tramo--${(indice % 6) + 1}`,
-    style: `flex: ${Number(categoria.amount)} 0 0`,
+    style: { flex: `${Number(categoria.amount)} 0 0` },
   })));
 
   const leyenda = el('ul', { class: 'leyenda' }, porCategoria.map((categoria, indice) =>
