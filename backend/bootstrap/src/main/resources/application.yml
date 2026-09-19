@@ -30,6 +30,26 @@ spring:
         jdbc:
           time_zone: UTC
 
+  # Rele SMTP para el enlace de restablecimiento. Sin MAIL_HOST la aplicacion arranca
+  # igual, pero no envia nada y lo avisa por log en cada intento.
+  # Con Brevo: host smtp-relay.brevo.com, puerto 587, usuario el de tu cuenta y como
+  # contrasena la clave SMTP (no la del panel).
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -73,6 +93,12 @@ management:
     web:
       exposure:
         include: health
+  health:
+    # Sin SMTP configurado el indicador de correo dejaria la aplicacion en 503, y no es
+    # cierto: la aplicacion sirve perfectamente sin poder enviar correos. Lo unico que
+    # no funcionaria es el restablecimiento, y de eso ya avisa LoggingEmailSender.
+    mail:
+      enabled: false
   endpoint:
     health:
       show-details: never
@@ -100,6 +126,14 @@ gastos:
   # Origenes autorizados del frontend. Vacio significa que no se admite ninguno.
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+  password-reset:
+    # Corta a proposito: el enlace viaja por un canal que no controlamos.
+    ttl: 30m
+    # A donde apunta el enlace del correo. Debe ser la URL publica del frontend.
+    base-url: ${APP_BASE_URL:http://localhost:5173}
+    # En Brevo tiene que ser un remitente verificado o el envio se rechaza.
+    from: ${MAIL_FROM:gastos@localhost}
 
   rate-limit:
     enabled: true

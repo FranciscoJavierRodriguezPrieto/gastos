@@ -42,9 +42,13 @@ El riesgo número uno: pedir el recurso de otro cambiando un identificador.
   hogar; después, sólo el `OWNER` da de alta al otro conviviente.
 - **La clave de firma no tiene valor por defecto**: sin `JWT_SECRET` la aplicación no
   arranca.
+- **Restablecimiento por correo** con token opaco de un solo uso y 30 minutos de vida,
+  guardado como hash. Pedirlo responde igual exista o no la cuenta; restablecer revoca
+  todas las sesiones; pedir un enlace nuevo invalida el anterior.
 
 **Estado: hecho.** `AuthApiTest` (11 tests: rotación, reutilización, cierre de sesión,
-registro cerrado, credenciales indistinguibles), `MortgageApiTest.tamperedTokenIsRejected`.
+registro cerrado, credenciales indistinguibles), `PasswordResetApiTest` (11 tests del
+flujo de recuperación), `MortgageApiTest.tamperedTokenIsRejected`.
 
 ---
 

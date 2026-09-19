@@ -684,3 +684,14 @@ body[data-estado='anonimo'] .app {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Enlace a la pantalla de cuenta desde el pie de la navegación. */
+.lateral__usuario--enlace {
+  text-decoration: none;
+  padding: var(--space-2) 0;
+}
+
+.lateral__usuario--enlace:hover {
+  color: var(--color-primary-deep);
+  text-decoration: underline;
+}

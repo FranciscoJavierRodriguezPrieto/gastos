@@ -2,6 +2,7 @@ package com.gastos.web;
 
 import com.gastos.iam.application.AuthenticateUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
+import com.gastos.iam.application.RecoverAccessUseCase;
 import com.gastos.shared.domain.DomainException;
 import com.gastos.shared.domain.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +55,20 @@ public class ApiExceptionHandler {
             AuthenticateUseCase.InvalidCredentialsException e, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiError.of(401, "UNAUTHORIZED", "Credenciales no validas",
+                        request.getRequestURI()));
+    }
+
+    /**
+     * Enlace de restablecimiento invalido, caducado o ya usado.
+     *
+     * <p>Los tres casos responden igual: distinguirlos permitiria averiguar si un token
+     * existio alguna vez.</p>
+     */
+    @ExceptionHandler(RecoverAccessUseCase.InvalidResetTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidResetToken(
+            RecoverAccessUseCase.InvalidResetTokenException e, HttpServletRequest request) {
+        return ResponseEntity.badRequest()
+                .body(ApiError.of(400, "INVALID_RESET_TOKEN", e.getMessage(),
                         request.getRequestURI()));
     }
 

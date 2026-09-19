@@ -61,7 +61,58 @@ disponible.
 
 ---
 
-## 3. Contraseñas: entre 12 y 128 caracteres
+## 3. Correo saliente (Brevo)
+
+El restablecimiento de contraseña envía un enlace por correo a través de un **relé
+SMTP**. Se eligió SMTP y no la API REST del proveedor porque es un contrato universal:
+cambiar de Brevo a otro proveedor son tres líneas de configuración, no reescribir código.
+
+| Variable | Valor con Brevo |
+|---|---|
+| `MAIL_HOST` | `smtp-relay.brevo.com` |
+| `MAIL_PORT` | `587` |
+| `MAIL_USERNAME` | El login SMTP que da Brevo |
+| `MAIL_PASSWORD` | La **clave SMTP**, no la contraseña del panel |
+| `MAIL_FROM` | Un remitente **verificado** en Brevo, o el envío se rechaza |
+| `APP_BASE_URL` | La URL pública del frontend, a la que apunta el enlace |
+
+**Sin `MAIL_HOST` la aplicación arranca igual**, pero no envía nada. Avisa con un `WARN`
+al arrancar y en cada intento:
+
+```
+No hay servidor de correo configurado (spring.mail.host). El restablecimiento de
+contrasena NO enviara ningun mensaje. Configuralo antes de desplegar.
+```
+
+Ese aviso existe a propósito. Sin él, alguien desplegaría sin correo, el formulario
+respondería correctamente —porque **no puede** distinguir casos, para no delatar qué
+cuentas existen— y nadie se enteraría de que ningún enlace llega a su destino.
+
+El enlace **no se escribe nunca en el log**: sería una credencial válida en texto plano
+al alcance de cualquiera que lea las trazas.
+
+---
+
+## 4. Si olvidas la contraseña
+
+1. En la pantalla de acceso, **«He olvidado mi contraseña»**.
+2. Escribe tu correo. La respuesta es la misma exista o no la cuenta.
+3. Abre el enlace del correo. **Caduca en 30 minutos y sólo sirve una vez.**
+4. Elige una contraseña nueva.
+
+Al restablecerla **se cierran todas las sesiones**, también en otros dispositivos. Es
+deliberado: quien necesita recuperar el acceso es porque lo había perdido, y dejar vivas
+las sesiones anteriores dejaría dentro a quien no debe.
+
+Pedir el enlace dos veces **invalida el anterior**: nunca hay dos puertas abiertas.
+
+Para cambiarla sabiéndola, hay pantalla propia en **Tu cuenta**, desde el pie de la
+navegación. Pide la actual aunque la sesión sea válida, para que quien encuentre el
+equipo desbloqueado no pueda apoderarse de la cuenta.
+
+---
+
+## 5. Contraseñas: entre 12 y 128 caracteres
 
 **No se exigen mayúsculas, dígitos ni símbolos**, y es deliberado. Las reglas de
 composición empujan a la gente hacia patrones predecibles del tipo `Verano2026!`, que un
@@ -76,7 +127,7 @@ devuelven por la API.
 
 ---
 
-## 4. Poner en marcha desde cero
+## 6. Poner en marcha desde cero
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build
@@ -104,7 +155,7 @@ curl -X POST http://localhost:8080/api/v1/auth/members \
 
 ---
 
-## 5. Sesiones
+## 7. Sesiones
 
 | | Duración | Se puede revocar |
 |---|---|---|
@@ -124,7 +175,7 @@ refresco.
 
 ---
 
-## 6. Base de datos
+## 8. Base de datos
 
 Los datos viven en el volumen Docker `infra_gastos-db-data` y **sobreviven a parar los
 contenedores**.
@@ -150,7 +201,7 @@ Todavía no hay nada automatizado. Ver el apartado de pendientes.
 
 ---
 
-## 7. Antes de exponerlo a internet
+## 9. Antes de exponerlo a internet
 
 Ninguna de estas es cuestión de código: son de operación.
 
@@ -160,19 +211,20 @@ Ninguna de estas es cuestión de código: son de operación.
 - [ ] **Contraseña de PostgreSQL** distinta de `gastos_local_dev`.
 - [ ] **`CORS_ALLOWED_ORIGINS`** apuntando al dominio real del frontend, no a
       `localhost:5173`.
+- [ ] **Correo configurado** (`MAIL_HOST` y compañía) y `APP_BASE_URL` con la URL
+      pública. Sin ellos, el restablecimiento de contraseña no funciona.
+- [ ] **`connect-src` de la CSP** en `frontend/_headers`, apuntando al dominio real de
+      la API.
 - [ ] **Copia de seguridad** de la base de datos con alguna periodicidad.
 
 ---
 
-## 8. Pendiente, que conviene tener presente
+## 10. Pendiente, que conviene tener presente
 
 Cosas que hoy **no** existen y que pueden morder:
 
-- **No hay recuperación de contraseña.** Si la olvidas, la única salida es entrar en la
-  base de datos y sustituir el hash a mano. Con dos usuarios es asumible, pero es una
-  carencia real, no un olvido.
-- **No hay cambio de contraseña** desde la aplicación.
 - **No hay copia de seguridad automática.**
+- **No hay pantalla para dar de alta al segundo conviviente**; hoy sólo por API.
 - **No hay expulsión de sesiones** desde una pantalla: revocar exige llamar a `logout`
   con el token de refresco correspondiente, o borrar filas de `refresh_token`.
 - **Rotación del `JWT_SECRET` sin cortar sesiones**: haría falta soportar dos claves a la

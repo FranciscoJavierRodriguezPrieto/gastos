@@ -61,6 +61,12 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
+        <!-- Envio del enlace de restablecimiento por rele SMTP. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Migraciones versionadas: el esquema es codigo revisable, no un efecto
              secundario de las entidades JPA. -->
         <dependency>

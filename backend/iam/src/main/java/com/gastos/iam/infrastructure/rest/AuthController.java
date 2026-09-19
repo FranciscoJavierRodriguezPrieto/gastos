@@ -3,12 +3,16 @@ package com.gastos.iam.infrastructure.rest;
 import com.gastos.iam.application.AuthenticateUseCase;
 import com.gastos.iam.application.AuthenticationResult;
 import com.gastos.iam.application.ManageHouseholdUseCase;
+import com.gastos.iam.application.RecoverAccessUseCase;
 import com.gastos.iam.domain.model.User;
 import com.gastos.iam.infrastructure.rest.dto.AddMemberRequest;
 import com.gastos.iam.infrastructure.rest.dto.BootstrapStatusResponse;
+import com.gastos.iam.infrastructure.rest.dto.ChangePasswordRequest;
+import com.gastos.iam.infrastructure.rest.dto.ForgotPasswordRequest;
 import com.gastos.iam.infrastructure.rest.dto.LoginRequest;
 import com.gastos.iam.infrastructure.rest.dto.RefreshRequest;
 import com.gastos.iam.infrastructure.rest.dto.RegisterHouseholdRequest;
+import com.gastos.iam.infrastructure.rest.dto.ResetPasswordRequest;
 import com.gastos.iam.infrastructure.rest.dto.TokenResponse;
 import com.gastos.iam.infrastructure.rest.dto.UserResponse;
 import com.gastos.shared.domain.AuthenticatedUser;
@@ -39,12 +43,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(AuthController.class);
+
     private final AuthenticateUseCase authenticate;
     private final ManageHouseholdUseCase household;
+    private final RecoverAccessUseCase recover;
 
-    public AuthController(AuthenticateUseCase authenticate, ManageHouseholdUseCase household) {
+    public AuthController(AuthenticateUseCase authenticate, ManageHouseholdUseCase household,
+                          RecoverAccessUseCase recover) {
         this.authenticate = authenticate;
         this.household = household;
+        this.recover = recover;
     }
 
     /** Permite a la pantalla inicial saber si hay que crear el hogar o pedir login. */
@@ -81,6 +91,40 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
         authenticate.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Pide el enlace de restablecimiento.
+     *
+     * <p>Responde <strong>204 siempre</strong>, exista el correo o no. Cualquier otra
+     * cosa convertiria este formulario en un comprobador de cuentas registradas.</p>
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            recover.requestReset(new com.gastos.iam.domain.model.Email(request.email()));
+        } catch (com.gastos.shared.domain.DomainException e) {
+            // Un correo con formato invalido no puede estar registrado. Se traga el
+            // error para que la respuesta sea idéntica a la de un correo desconocido.
+            log.info("Solicitud de restablecimiento con un correo mal formado");
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Fija la contrasena nueva y deja la sesion iniciada. */
+    @PostMapping("/reset-password")
+    public TokenResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        User usuario = recover.resetPassword(request.token(), request.newPassword().toCharArray());
+        return AuthRestMapper.toResponse(authenticate.issueTokensFor(usuario));
+    }
+
+    /** Cambia la contrasena con la sesion ya iniciada. Exige la actual. */
+    @PostMapping("/password")
+    public ResponseEntity<Void> changePassword(@CurrentUser AuthenticatedUser user,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        recover.changePassword(user, request.currentPassword().toCharArray(),
+                request.newPassword().toCharArray());
         return ResponseEntity.noContent().build();
     }
 

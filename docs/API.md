@@ -21,6 +21,9 @@ cliente pueda escribir.
 | `POST` | `/auth/login` | sí | Inicia sesión. |
 | `POST` | `/auth/refresh` | sí | Canjea el token de refresco por uno nuevo. **Rota**: el anterior queda consumido. |
 | `POST` | `/auth/logout` | sí | Revoca el token de refresco. Siempre `204`. |
+| `POST` | `/auth/forgot-password` | sí | Pide el enlace de restablecimiento. **Siempre `204`**, exista la cuenta o no. |
+| `POST` | `/auth/reset-password` | sí | Fija la contraseña con el token del correo y devuelve la sesión iniciada. |
+| `POST` | `/auth/password` | no | Cambia la contraseña. Exige la actual. `204`. |
 | `GET` | `/auth/me` | no | El usuario autenticado. |
 | `GET` | `/auth/members` | no | Miembros del hogar. |
 | `POST` | `/auth/members` | no | Da de alta al segundo conviviente. **Sólo el `OWNER`**; un `MEMBER` recibe `403`. |
@@ -31,6 +34,9 @@ de datos sólo queda su hash.
 
 **Reutilizar un token de refresco ya canjeado revoca toda la sesión.** Es la defensa ante
 un token robado: si reaparece uno consumido, caen todos.
+
+**Restablecer o cambiar la contraseña revoca todas las sesiones.** El token del enlace
+dura 30 minutos, sirve una sola vez, y pedir uno nuevo invalida el anterior.
 
 Las razones de este diseño están en [ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md).
 

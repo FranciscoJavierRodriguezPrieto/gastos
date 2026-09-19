@@ -87,8 +87,20 @@ más rápida de que la simulación se haga con cifras desactualizadas.
 Las barras de DTI llevan **marcada la línea del límite**: un 28% no dice si es bueno o
 malo hasta que se ve contra qué se compara.
 
+## Recuperar el acceso
+
+Dos rutas públicas, accesibles sin sesión: `#/olvide` para pedir el enlace y
+`#/restablecer?token=...`, a la que llega el enlace del correo.
+
+El token va en el **fragmento** y no en la query: lo que va detrás de la almohadilla no se
+envía al servidor ni aparece en los registros de acceso.
+
+El mensaje de confirmación es **el mismo exista o no el correo**, porque así responde el
+servidor. Si esta pantalla dijera «no encontramos esa cuenta», echaría por tierra todo el
+cuidado puesto en el servidor para no delatar qué cuentas hay.
+
 ## Pendiente
 
 - **`connect-src` de la CSP** en `_headers` apunta a `http://localhost:8080`. Al desplegar
   hay que cambiarlo al dominio real de la API o la aplicación no podrá hablar con ella.
-- **Cambio de contraseña y gestión de miembros** desde la interfaz; hoy sólo por API.
+- **Alta del segundo conviviente** desde la interfaz; hoy sólo por API.

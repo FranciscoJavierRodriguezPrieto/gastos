@@ -4,7 +4,9 @@ import { el } from './ui/dom.js';
 import { vistaCuentas } from './views/accounts.js';
 import { vistaGastos } from './views/expenses.js';
 import { vistaHipoteca } from './views/mortgage.js';
+import { vistaCuenta } from './views/account.js';
 import { vistaLogin } from './views/login.js';
+import { vistaOlvide, vistaRestablecer } from './views/recover.js';
 import { vistaResumen } from './views/summary.js';
 
 /**
@@ -29,10 +31,42 @@ function rutaActual() {
   return SECCIONES.some((s) => s.ruta === destino) ? destino : 'resumen';
 }
 
+/**
+ * Rutas accesibles sin sesion.
+ *
+ * `restablecer` llega desde el enlace del correo, con el token en la propia URL, asi que
+ * tiene que funcionar sin haber iniciado sesion.
+ */
+function rutaPublica() {
+  const destino = window.location.hash.replace(/^#\/?/, '');
+  if (destino.startsWith('restablecer')) {
+    return { nombre: 'restablecer', token: new URLSearchParams(destino.split('?')[1] ?? '').get('token') };
+  }
+  if (destino.startsWith('olvide')) {
+    return { nombre: 'olvide' };
+  }
+  return null;
+}
+
 async function pintarAplicacion() {
+  const publica = rutaPublica();
+
+  if (publica?.nombre === 'restablecer') {
+    document.body.dataset.estado = 'anonimo';
+    vistaRestablecer(raiz, publica.token, { alEntrar: entrar, alVolver: irAlAcceso });
+    return;
+  }
+
   if (!session.isAuthenticated) {
     document.body.dataset.estado = 'anonimo';
-    await vistaLogin(raiz, { alEntrar: entrar });
+    if (publica?.nombre === 'olvide') {
+      vistaOlvide(raiz, { alVolver: irAlAcceso });
+      return;
+    }
+    await vistaLogin(raiz, {
+      alEntrar: entrar,
+      alOlvidar: () => { window.location.hash = '#/olvide'; },
+    });
     return;
   }
 
@@ -46,12 +80,20 @@ async function pintarSeccion(contenido = document.getElementById('contenido')) {
   if (!contenido) {
     return;
   }
+  if (window.location.hash.replace(/^#\/?/, '') === 'cuenta') {
+    marcarActiva(null);
+    document.title = 'Tu cuenta · Gastos';
+    await vistaCuenta(contenido);
+    return;
+  }
+
   const seccion = SECCIONES.find((s) => s.ruta === rutaActual());
   marcarActiva(seccion.ruta);
   document.title = `${seccion.etiqueta} · Gastos`;
   await seccion.vista(contenido);
 }
 
+/** `ruta` a null desmarca todas: se usa en pantallas que no son pestaña. */
 function marcarActiva(ruta) {
   for (const enlace of document.querySelectorAll('[data-ruta]')) {
     const activa = enlace.dataset.ruta === ruta;
@@ -83,7 +125,11 @@ function barraLateral() {
     ]),
     el('div', { class: 'lateral__enlaces' }, enlaces('lateral')),
     el('div', { class: 'lateral__pie' }, [
-      el('span', { class: 'lateral__usuario', text: session.user?.displayName ?? '' }),
+      el('a', {
+        class: 'lateral__usuario lateral__usuario--enlace',
+        href: '#/cuenta',
+        text: session.user?.displayName ?? 'Tu cuenta',
+      }),
       el('button', {
         class: 'boton boton--sutil', type: 'button', onClick: salir,
       }, 'Cerrar sesión'),
@@ -102,7 +148,8 @@ async function entrar() {
   } catch {
     // Que falle /auth/me no impide usar la aplicación: sólo deja el nombre sin mostrar.
   }
-  if (!window.location.hash) {
+  const destino = window.location.hash.replace(/^#\/?/, '');
+  if (!destino || destino.startsWith('restablecer') || destino.startsWith('olvide')) {
     window.location.hash = '#/resumen';
   }
   await pintarAplicacion();
@@ -125,10 +172,18 @@ async function salir() {
 }
 
 window.addEventListener('hashchange', () => {
-  if (session.isAuthenticated) {
-    pintarSeccion();
+  // Las rutas publicas y el login cambian el armazon entero, no solo el contenido.
+  if (!session.isAuthenticated || rutaPublica()) {
+    pintarAplicacion();
+    return;
   }
+  pintarSeccion();
 });
+
+function irAlAcceso() {
+  window.location.hash = '';
+  pintarAplicacion();
+}
 
 // Si el cliente descubre que la sesión murió (refresco fallido), vuelve al login solo.
 session.onChange((estado) => {
@@ -138,6 +193,14 @@ session.onChange((estado) => {
 });
 
 async function arrancar() {
+  // Quien llega desde el enlace del correo no debe pasar por el login, aunque tenga una
+  // sesion vieja guardada.
+  if (rutaPublica()?.nombre === 'restablecer') {
+    await pintarAplicacion();
+    registrarServiceWorker();
+    return;
+  }
+
   // Con token de refresco pero sin el de acceso —caso normal tras recargar— se canjea
   // antes de pintar, para no enseñar el login un instante a quien ya tiene sesión.
   if (!session.accessToken && session.refreshToken) {
@@ -148,7 +211,10 @@ async function arrancar() {
     }
   }
   await (session.isAuthenticated ? entrar() : pintarAplicacion());
+  registrarServiceWorker();
+}
 
+function registrarServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // Sin service worker la aplicación funciona igual, sólo pierde el arranque offline.
