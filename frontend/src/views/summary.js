@@ -76,7 +76,7 @@ function distribucion(resumen, total) {
       .map((c) => `${c.label}, ${euros(c.amount)}`).join('; ')}`,
   }, resumen.byCategory.map((categoria, indice) => el('span', {
     class: `barra-apilada__tramo barra-apilada__tramo--${(indice % 6) + 1}`,
-    style: `flex: ${Number(categoria.amount)} 0 0`,
+    style: { flex: `${Number(categoria.amount)} 0 0` },
     title: `${categoria.label}: ${euros(categoria.amount)}`,
   })));
 

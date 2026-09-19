@@ -386,11 +386,11 @@ function barraRatio(etiqueta, valor, limite, ayuda) {
     }, [
       el('span', {
         class: `ratio__relleno${excede ? ' ratio__relleno--excede' : ''}`,
-        style: `width: ${Math.min((porcentajeValor / escala) * 100, 100)}%`,
+        style: { width: `${Math.min((porcentajeValor / escala) * 100, 100)}%` },
       }),
       el('span', {
         class: 'ratio__limite',
-        style: `left: ${(limite / escala) * 100}%`,
+        style: { left: `${(limite / escala) * 100}%` },
         title: `Límite: ${limite} %`,
       }),
     ]),
