@@ -75,7 +75,8 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | 4 | `refactor/mortgage-programas-configurables` | Integrada | Programas de ayuda como datos + modos de financiación (automático / programa / manual). |
 | 5 | `feature/persistence-postgresql` | Integrada | Adaptadores JPA, Flyway y Docker Compose. Sustituye a los repositorios en memoria. |
 | 6 | `feature/security-jwt` | Integrada | Spring Security, JWT con refresco rotatorio, usuarios en base de datos. Cierra OWASP API2. |
-| 7 | `feature/pwa-shell` | **Actual** | PWA instalable: acceso, sesión, navegación, service worker, y las pantallas de Resumen, Gastos y Cuentas. |
-| 8 | `feature/mortgage-ui` | Siguiente | Herramienta de hipoteca: deslizadores, selector de programa y veredicto. |
-| 9 | `feature/passkeys` | Pendiente | WebAuthn como alternativa a la contraseña. Encaja encima de JWT sin rehacer nada. |
-| 10 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |
+| 7 | `feature/pwa-shell` | Integrada | PWA instalable: acceso, sesión, navegación, service worker, y las pantallas de Resumen, Gastos y Cuentas. |
+| 8 | `feature/mortgage-ui` | **Actual** | Herramienta de hipoteca: deslizadores, catálogo de programas y veredicto. |
+| 9 | `feature/password-recovery` | Siguiente | Códigos de recuperación y cambio de contraseña. Cierra una carencia del manual de operación. |
+| 10 | `feature/passkeys` | Pendiente | WebAuthn como alternativa a la contraseña. Encaja encima de JWT sin rehacer nada. |
+| 11 | `chore/deployment-pipeline` | Pendiente | Docker, CI/CD, despliegue en Fly.io + Neon + Cloudflare Pages. |

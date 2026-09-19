@@ -1,0 +1,427 @@
+/*
+ * Estilos de la herramienta de hipoteca.
+ *
+ * En fichero aparte porque es la pantalla con más peso visual del producto y mezclarla
+ * con el resto haría app.css inmanejable. Mismos tokens, ni un color suelto.
+ */
+
+.pestanas {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.pestanas__boton {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.pestanas__boton--activa {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+/* Controles a la izquierda y resultado a la derecha, y el resultado pegado al hacer
+   scroll: al mover un deslizador se ve cambiar la cuota sin perderla de vista. */
+.hipoteca {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.hipoteca__controles,
+.resultado__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.resultado {
+  position: sticky;
+  top: var(--space-4);
+}
+
+.controles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.controles__extra:empty {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ deslizadores */
+
+.deslizador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.deslizador__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.deslizador__etiqueta {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.deslizador__valor {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.deslizador__controles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.deslizador__rango {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-primary-deep);
+  /* Alto generoso para que se pueda arrastrar con el dedo. */
+  height: 44px;
+}
+
+.deslizador__caja {
+  width: 7rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  /* 16px evita que iOS haga zoom al enfocar. */
+  font-size: 16px;
+  font-family: var(--font-numeric);
+  text-align: right;
+}
+
+.deslizador__ayuda {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.casilla input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary-deep);
+}
+
+/* ------------------------------------------------------------------ veredicto */
+
+.veredicto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.veredicto--inviable {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+}
+
+.veredicto--ajustada {
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
+.veredicto__cuota {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.veredicto__etiqueta {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.veredicto__importe {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* El distintivo lleva SIEMPRE texto: el color nunca comunica solo. */
+.distintivo {
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.distintivo--optima {
+  background: color-mix(in srgb, var(--color-positive) 15%, transparent);
+  color: var(--color-positive);
+}
+
+.distintivo--ajustada {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-warning);
+}
+
+.distintivo--inviable {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.distintivo--neutro {
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+}
+
+/* ------------------------------------------------------------------ ratios DTI */
+
+.ratios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.ratio__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ratio__etiqueta {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.ratio__valor {
+  font-weight: 600;
+}
+
+.ratio__valor--excede {
+  color: var(--color-danger);
+}
+
+.ratio__pista {
+  position: relative;
+  height: 10px;
+  margin: var(--space-2) 0 var(--space-1);
+  border-radius: 999px;
+  background: var(--color-background);
+}
+
+.ratio__relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary-strong);
+}
+
+.ratio__relleno--excede {
+  background: var(--color-danger);
+}
+
+/* Marca del límite: el porcentaje solo no dice si es bueno o malo. */
+.ratio__limite {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--color-text);
+  opacity: 0.55;
+}
+
+.ratio__ayuda {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.ratios__residual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ------------------------------------------------------------------ desgloses */
+
+.desglose {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.desglose__linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.motivos + .motivos {
+  margin-top: var(--space-4);
+}
+
+.motivos__titulo {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.motivos__lista {
+  margin: 0;
+  padding-left: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.motivos--bloqueo .motivos__lista { color: var(--color-danger); }
+.motivos--aviso .motivos__lista { color: var(--color-warning); }
+
+/* ------------------------------------------------------------------ programas */
+
+.programa,
+.programa-eval {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.programa:last-child,
+.programa-eval:last-child {
+  border-bottom: none;
+}
+
+.programa__datos,
+.programa-eval__datos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.programa__nombre,
+.programa-eval__nombre {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.programa__meta,
+.programa-eval__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.programa__origen {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.programa-eval__falta {
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+}
+
+.programa__ltv {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.programa__acciones,
+.tarjeta__acciones {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.etiqueta--apagado {
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+}
+
+.aviso {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+.aviso .texto-apoyo {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.formulario__casillas {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+/* En pantallas estrechas el resultado va ARRIBA: es lo que se quiere ver al tocar un
+   control, no algo que haya que buscar al final de la página. */
+@media (max-width: 1023px) {
+  .hipoteca {
+    grid-template-columns: 1fr;
+  }
+
+  .resultado {
+    position: static;
+    order: -1;
+  }
+
+  .deslizador__caja {
+    width: 5.5rem;
+  }
+}

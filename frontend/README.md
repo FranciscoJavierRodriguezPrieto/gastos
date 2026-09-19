@@ -69,10 +69,26 @@ nunca: un saldo desactualizado que parece actual es peor que no ver nada.
 **Nunca se usa `innerHTML` con datos.** Todo el texto entra por `textContent`. Un
 concepto de gasto con `<script>` dentro se ve como texto, que es lo que es.
 
+## La pantalla de hipoteca
+
+No calcula nada. Cada movimiento de un deslizador reenvía el escenario completo al
+servidor y pinta lo que devuelve. Es más tráfico que calcular la cuota en el navegador,
+pero evita el problema de verdad: dos implementaciones de la misma fórmula financiera que
+acaban divergiendo sin que nadie se entere.
+
+Los deslizadores van con retardo de 250 ms. Sin él, arrastrar uno lanzaría decenas de
+peticiones por segundo y además llegarían desordenadas: la respuesta de un valor
+intermedio podría pintarse después de la del valor final.
+
+Los ingresos y las deudas se precargan con lo que la aplicación ya sabe (miembros del
+hogar y compromisos recurrentes de Gastos). Obligar a reescribirlos a mano es la forma
+más rápida de que la simulación se haga con cifras desactualizadas.
+
+Las barras de DTI llevan **marcada la línea del límite**: un 28% no dice si es bueno o
+malo hasta que se ve contra qué se compara.
+
 ## Pendiente
 
-- **Pantalla de hipoteca**, con los deslizadores y el selector de programa. El motor de
-  cálculo ya está completo en el backend; falta la interfaz.
 - **`connect-src` de la CSP** en `_headers` apunta a `http://localhost:8080`. Al desplegar
   hay que cambiarlo al dominio real de la API o la aplicación no podrá hablar con ella.
 - **Cambio de contraseña y gestión de miembros** desde la interfaz; hoy sólo por API.

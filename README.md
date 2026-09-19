@@ -6,15 +6,13 @@ Madrid.
 
 ## Estado actual
 
-Rama `feature/pwa-shell`: backend completo (dominio, hipoteca, API REST, PostgreSQL y
-autenticación con JWT) y **PWA instalable** con acceso, Resumen, Gastos y Cuentas
-funcionando. 135 tests de backend y 13 de frontend, todos en verde.
+Rama `feature/mortgage-ui`: backend completo y **PWA instalable con las cuatro
+pantallas** funcionando, incluida la herramienta de hipoteca con deslizadores, catálogo
+de programas editable y veredicto de viabilidad. 135 tests de backend y 13 de frontend.
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 
-Falta la **pantalla de hipoteca**: el motor de cálculo está completo y probado en el
-backend, pero todavía no tiene interfaz. El plan de ramas está en
-[docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
+El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
 ## Módulos funcionales
 

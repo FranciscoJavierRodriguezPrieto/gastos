@@ -58,6 +58,9 @@ services:
       - api
     volumes:
       - ../frontend:/usr/share/nginx/html:ro
+      # Sin esta configuracion nginx no manda Cache-Control y el navegador se queda con
+      # la version anterior de cualquier fichero que edites.
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       # 5173 porque es el origen que la API trae autorizado por defecto en CORS.
       - "127.0.0.1:5173:80"
