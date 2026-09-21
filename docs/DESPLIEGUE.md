@@ -6,8 +6,15 @@ separadas, según [ADR-0002](adr/ADR-0002-plataforma-de-despliegue.md):
 | Pieza | Dónde | Qué hace falta |
 |---|---|---|
 | PostgreSQL | **Neon** | Cuenta. Sin tarjeta. |
-| API Java | **Fly.io** | Cuenta **con tarjeta** (no cobra en la capa gratuita, pero la exige). |
+| API Java | **Fly.io** | Cuenta **con tarjeta**, y **de pago**: ver el aviso de abajo. |
 | PWA | **Cloudflare Pages** | Cuenta. Sin tarjeta. |
+
+> **Aviso (21/09/2026): Fly.io ya no tiene capa gratuita para cuentas nuevas** desde
+> octubre de 2024; sólo una prueba de 2 horas o 7 días. Con escalado a cero se paga sólo
+> mientras la máquina está encendida, del orden de 1 a 4 € al mes para este uso, pero no
+> es gratis. Las alternativas gratuitas siguen siendo Koyeb (una instancia de 512 MB y
+> 0,1 vCPU en Frankfurt) y Oracle Cloud Always Free (2 OCPU y 12 GB desde junio de 2026,
+> administrando uno mismo la máquina). Ver ADR-0002.
 
 > Nada de esto se ha desplegado todavía. Lo que hay en el repositorio son los ficheros
 > preparados (`fly.toml`, `scripts/preparar-frontend.mjs`, el workflow de despliegue) y
@@ -188,8 +195,8 @@ viven en `fly secrets` y así no pasan por el registro de ejecuciones de GitHub.
 
 ## Lo que cuesta y lo que duele
 
-**Coste: 0 €**, con una tarjeta registrada en Fly que no se cobra mientras se esté en la
-capa gratuita.
+**Coste:** Neon y Cloudflare Pages, 0 €. Fly.io, de pago por uso: entre 1 y 4 € al mes
+con escalado a cero. Si tiene que ser 0 €, la API va en Koyeb o en Oracle Cloud (ADR-0002).
 
 Lo que hay que asumir a cambio:
 

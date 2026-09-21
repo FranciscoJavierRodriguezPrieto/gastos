@@ -60,6 +60,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Imprescindible para la cache de tipo gha: el driver de Docker que trae el runner
+      # no sabe exportarla, y el paso siguiente fallaba con "build cache backends". Asi
+      # estuvo el CI en rojo desde que se anadio este job sin que nadie lo viera.
+      - name: Preparar buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Construir
         uses: docker/build-push-action@v6
         with:

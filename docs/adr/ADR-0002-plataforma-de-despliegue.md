@@ -58,3 +58,21 @@ completo en [DESPLIEGUE.md](../DESPLIEGUE.md).
 verdad. Preparar los ficheros no demuestra que la capa gratuita de Fly siga siendo como
 se describe en la tabla de arriba, ni cuánto tarda en frío la combinación Fly + Neon,
 que son las dos cosas que este ADR decía que había que medir.
+
+## Revisión del 21/09/2026: las capas gratuitas han cambiado
+
+Antes de desplegar se volvieron a mirar las condiciones, y dos de las tres piezas de API
+ya no son lo que dice la tabla:
+
+| Plataforma | Situación actual |
+|---|---|
+| **Fly.io** | **Sin capa gratuita para cuentas nuevas** desde octubre de 2024. Pago por uso: una máquina de 256 MB encendida todo el mes ronda los 2 $, y con escalado a cero se paga sólo el tiempo encendida. |
+| **Oracle Cloud Always Free** | Recortada a la mitad en junio de 2026: **2 OCPU ARM y 12 GB**. Sigue sobrando para esta aplicación, pero hay que administrar la máquina. |
+| **Koyeb** | Sigue con una instancia gratuita: 512 MB, 0,1 vCPU, Frankfurt o Washington, sin volúmenes. Llega justo para la JVM: el arranque en frío será lento. |
+| **Neon** | Sigue gratis: 0,5 GB, 100 CU-hora al mes, escala a cero. Sobra para dos personas. |
+| **Cloudflare Pages** | Sigue gratis. |
+
+**La decisión queda abierta** entre pagar unos euros al mes por Fly.io, quedarse a coste
+cero con Koyeb aceptando arranques lentos, o Oracle Cloud a cambio de mantener una
+máquina. El requisito original era coste cero, así que Fly.io deja de ser la opción
+principal por defecto.
