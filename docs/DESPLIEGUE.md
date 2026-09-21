@@ -6,16 +6,19 @@ gratuitas y separadas, según [ADR-0002](adr/ADR-0002-plataforma-de-despliegue.m
 | Pieza | Dónde | Qué hace falta |
 |---|---|---|
 | PostgreSQL | **Neon** | Cuenta. Sin tarjeta. 0,5 GB y 100 CU-hora al mes. |
-| API Java | **Koyeb** | Cuenta. Una instancia gratuita por organización: 512 MB, 0,1 vCPU, Fráncfort. |
+| API Java | **Render** | Cuenta. Web service gratuito: 512 MB, 0,1 vCPU, Fráncfort. |
 | PWA | **Cloudflare Pages** | Cuenta. Sin tarjeta. |
 
-> **Por qué no Render, aunque ya haya cuenta.** Sus 750 horas de instancia al mes son
-> **por workspace, no por servicio**, y un mes tiene unas 730: la bolsa da para *un*
-> servicio despierto, no para varios. Y al agotarla **Render suspende todos los servicios
-> gratuitos de la cuenta** hasta el mes siguiente, no sólo el que se pasó. Añadir esta
-> aplicación a un workspace donde ya hay otras cosas es arriesgarse a tumbarlas. Su
-> PostgreSQL gratuito, además, **caduca a los 30 días**. El razonamiento completo, en
-> [ADR-0002](adr/ADR-0002-plataforma-de-despliegue.md).
+> **La base de datos no va en Render aunque la API sí.** Su PostgreSQL gratuito son
+> 256 MB y **caduca a los 30 días** de crearla: pasado ese plazo queda inaccesible hasta
+> que se pague. La de Neon es gratis y no caduca.
+
+> **Las horas de Render son por workspace, no por servicio**, y un mes tiene unas 730 de
+> las 750 que da la capa gratuita. Esta aplicación consume poco —se despierta sólo cuando
+> la usáis— pero comparte bolsa con todo lo demás que tengas ahí. Lee
+> [«Vigilar la bolsa de horas»](#vigilar-la-bolsa-de-horas-de-render) antes de dar esto
+> por montado: si se agota, Render suspende **todos** los servicios gratuitos de la
+> cuenta, no sólo el que se pasó.
 
 > **Por qué no Vercel para la API.** No ejecuta contenedores de larga vida. Sólo serviría
 > para la PWA, que ya está resuelta y gratis en Cloudflare Pages.
@@ -68,7 +71,7 @@ deja una aplicación que carga pero no puede ni hacer login.
 
    **`sslmode=require` no es opcional**: sin él la conexión iría en claro por internet.
 
-3. Elige **`eu-central-1` (Fráncfort)**: es donde está la instancia gratuita de Koyeb.
+3. Elige **`eu-central-1` (Fráncfort)**, la misma región que el servicio de Render.
    Cada salto entre continentes son decenas de milisegundos en *cada* consulta.
 
 No hace falta crear ninguna tabla: **Flyway migra al arrancar**. La primera vez aplicará
@@ -76,81 +79,83 @@ las seis migraciones de golpe.
 
 ---
 
-## 2. API en Koyeb
+## 2. API en Render
 
-La instancia gratuita de Koyeb despliega **una imagen ya construida** desde un registro,
-así que primero hay que publicarla. Se usa GHCR, el registro de GitHub, porque la imagen
-ya se construye en CI y no hace falta otra cuenta.
+Render construye la imagen desde `infra/Dockerfile` y despliega desde el repositorio: no
+hay que publicar nada en ningún registro.
 
-### 2.1 Publicar la imagen
+### 2.1 Crear el servicio desde el Blueprint
 
-Desde la pestaña *Actions* del repositorio, el workflow **Desplegar** con `que = api`.
-Construye `infra/Dockerfile` y la sube a `ghcr.io/<usuario>/gastos-api:main`.
+`render.yaml`, en la raíz, ya trae la configuración: región, plan gratuito, ruta del
+Dockerfile, health check y la lista de variables.
 
-Hazlo **público** la primera vez (*Packages → gastos-api → Package settings → Change
-visibility*), o Koyeb no podrá descargarla sin credenciales. La imagen no contiene
-secretos: son todos variables de entorno.
+1. En el panel de Render, *New → Blueprint*.
+2. Conecta el repositorio y elige la rama.
+3. Render lee `render.yaml` y **pide los valores marcados como `sync: false`**. Los de la
+   base de datos y el correo se ponen aquí; los cuatro del dominio del frontend se dejan
+   en blanco de momento y se rellenan en el paso 4.
 
-Para publicarla a mano, sin Actions:
+`JWT_SECRET` no lo pide: `render.yaml` le dice que lo genere él. Nadie llega a verlo, que
+es lo suyo.
 
-```bash
-echo $GITHUB_TOKEN | docker login ghcr.io -u <usuario> --password-stdin
-docker build -f infra/Dockerfile -t ghcr.io/<usuario>/gastos-api:main .
-docker push ghcr.io/<usuario>/gastos-api:main
-```
+### 2.2 Qué esperar del primer despliegue
 
-### 2.2 Crear el servicio
+Dos cosas que asustan si no se avisan:
 
-En el panel de Koyeb, *Create Web Service* → *Docker image*:
-
-| Campo | Valor |
-|---|---|
-| Imagen | `ghcr.io/<usuario>/gastos-api:main` |
-| Región | **Frankfurt** (la gratuita) |
-| Instancia | **Free** |
-| Puerto | `8080`, protocolo HTTP |
-| Health check | HTTP `GET /actuator/health` |
-| *Grace period* del health check | **90 segundos** |
-
-Los 90 segundos no son por exceso de prudencia: con 0,1 vCPU, arrancar Spring Boot y
-aplicar las migraciones de Flyway lleva bastante más que los 40 segundos que basta darle
-a una máquina normal. Con el margen justo, Koyeb mata el contenedor a mitad del arranque
-y entra en un bucle de reinicios que parece un fallo de la aplicación.
+- **La construcción tarda.** Es un `mvn clean package` de seis módulos dentro del
+  contenedor. La primera vez, sin caché, cuenta varios minutos.
+- **El arranque, también.** Spring Boot y las migraciones de Flyway con 0,1 vCPU pasan del
+  minuto. Hasta que `/actuator/health` responde, Render muestra el servicio como no
+  disponible. **Parece colgado y no lo está.** Si a los cinco minutos sigue igual, mira
+  los logs: casi siempre es la base de datos.
 
 ### 2.3 Variables y secretos
 
-Las que no son secretas van como *environment variables*; el resto, como **secrets** de
-Koyeb. **Nunca en el repositorio.**
+Están todas declaradas en `render.yaml`, y ahí se explica para qué sirve cada una. Las
+que hay que rellenar a mano:
 
 | Variable | Valor |
 |---|---|
-| `JWT_SECRET` | secreto — genéralo con `openssl rand -base64 48` |
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://…/gastos?sslmode=require` |
 | `SPRING_DATASOURCE_USERNAME` | el de Neon |
-| `SPRING_DATASOURCE_PASSWORD` | secreto — el de Neon |
-| `MAIL_HOST` | `smtp-relay.brevo.com` |
-| `MAIL_PORT` | `587` |
+| `SPRING_DATASOURCE_PASSWORD` | el de Neon |
 | `MAIL_USERNAME` | el de Brevo |
-| `MAIL_PASSWORD` | secreto — la **clave SMTP** de Brevo, no la del panel |
+| `MAIL_PASSWORD` | la **clave SMTP** de Brevo, no la del panel |
 | `MAIL_FROM` | un remitente **verificado** en Brevo, o rechaza el envío |
-| `JAVA_OPTS` | `-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1` |
 
-Detalle del correo en [OPERACION.md §3](OPERACION.md). Los cuatro que dependen del
-dominio del frontend se ponen en el paso 4.
+Detalle del correo en [OPERACION.md §3](OPERACION.md).
 
-`JAVA_OPTS` ya viene en el `Dockerfile`, pero conviene ponerlo también aquí: deja a la
-vista, junto al resto de la configuración, que el heap está ajustado a 512 MB.
+Apunta la URL que sale (`https://gastos-api.onrender.com`).
 
-Apunta la URL que sale (`https://gastos-api-<org>.koyeb.app`).
+### Vigilar la bolsa de horas de Render
 
----
+La capa gratuita da **750 horas de instancia al mes por workspace**, compartidas entre
+todos los servicios gratuitos, y un mes tiene unas 730. Un servicio sólo gasta mientras
+está despierto, y se duerme a los **15 minutos** sin tráfico.
+
+Esta aplicación gasta poco: con dos personas abriéndola unas cuantas veces al día son
+**del orden de 15 h al mes**, contando la cola de 15 minutos de cada uso. Lo que hay que
+vigilar no es esto, es el conjunto:
+
+- **Un servicio que alguien mantiene despierto a propósito** —un *ping* periódico para
+  evitar el arranque en frío— gasta las horas de la ventana que se le haya puesto. De
+  8:30 a 21:00 todos los días son unas 390 h al mes. Uno así cabe; dos, no.
+- **Un rastreador indexando una web pública** la mantiene despierta sin que nadie lo
+  pida, y eso no aparece en ninguna previsión.
+
+Y el castigo es colectivo: **al agotar la bolsa, Render suspende todos los servicios
+gratuitos del workspace** hasta el mes siguiente, no sólo el que se pasó.
+
+Míralo de vez en cuando en *Billing → Usage*. Si el mes va camino de las 750, lo barato
+es mover **esta** aplicación, que es la que menos gasta y la única que no tiene público:
+`fly.toml` está preparado para eso.
 
 ## 3. PWA en Cloudflare Pages
 
 El frontend no se compila, pero sí hay que decirle dónde está la API:
 
 ```bash
-node scripts/preparar-frontend.mjs https://gastos-api-<org>.koyeb.app
+node scripts/preparar-frontend.mjs https://gastos-api.onrender.com
 ```
 
 Eso deja en `dist/` una copia del frontend con `config.js` y el `connect-src` de la CSP
@@ -172,7 +177,7 @@ Apunta la URL que sale (`https://gastos.pages.dev`).
 
 ## 4. Volver a la API con el dominio del frontend
 
-En las variables de entorno del servicio de Koyeb:
+En *Environment* del servicio de Render:
 
 | Variable | Valor |
 |---|---|
@@ -181,8 +186,8 @@ En las variables de entorno del servicio de Koyeb:
 | `WEBAUTHN_ORIGINS` | `https://gastos.pages.dev` |
 | `APP_BASE_URL` | `https://gastos.pages.dev` |
 
-Koyeb redespliega el servicio al guardar. Espera a que el health check pase antes de
-probar nada.
+Render redespliega al guardar. Espera a que el health check pase antes de probar nada:
+con 0,1 vCPU tarda más de un minuto.
 
 Cuatro avisos sobre estos valores:
 
@@ -203,13 +208,13 @@ Cuatro avisos sobre estos valores:
 ## 5. Comprobar que ha salido bien
 
 ```bash
-curl -s https://gastos-api-<org>.koyeb.app/actuator/health
+curl -s https://gastos-api.onrender.com/actuator/health
 ```
 
-Debe responder `{"status":"UP"}`. **La primera llamada del día puede tardar medio minuto
-largo**: la instancia gratuita baja a cero tras una hora sin tráfico y una JVM con
+Debe responder `{"status":"UP"}`. **La primera llamada del día puede tardar uno o dos
+minutos**: la instancia gratuita se duerme a los 15 minutos sin tráfico y una JVM con
 0,1 vCPU no arranca deprisa. Si en vez de tardar responde `DOWN`, casi siempre es la base
-de datos: los *logs* del servicio en Koyeb lo dicen en la primera línea del error.
+de datos: los *logs* del servicio en Render lo dicen en la primera línea del error.
 
 Luego, desde el navegador, en `https://gastos.pages.dev`:
 
@@ -237,49 +242,51 @@ La lista completa de cosas que revisar antes de exponerlo está en
 Cuando haya un despliegue funcionando y se decida que `main` es producción, basta añadir
 `push: branches: [main]` al disparador.
 
-Para la API hace dos cosas: construye la imagen y la sube a GHCR, y después pide a Koyeb
-que redespliegue el servicio, que vuelve a descargar la etiqueta `main`. **La primera vez
-el servicio hay que crearlo a mano** en el panel (paso 2.2): el workflow actualiza un
-servicio que ya existe, no lo crea.
+Para la API sólo llama al *deploy hook* de Render, que es lo que dispara la construcción
+y el despliegue. `render.yaml` lleva `autoDeploy: false` justo para que ese disparo sea
+deliberado y no cada push. **La primera vez el servicio se crea desde el Blueprint** en el
+panel (paso 2.1); el workflow redespliega uno que ya existe.
 
 Secretos que hay que dar de alta en el repositorio (*Settings → Secrets and variables →
 Actions*):
 
 | Secreto | De dónde sale |
 |---|---|
-| `KOYEB_API_TOKEN` | Panel de Koyeb, *Organization settings → API* |
+| `RENDER_DEPLOY_HOOK_URL` | Panel de Render, servicio → *Settings → Deploy Hook* |
 | `CLOUDFLARE_API_TOKEN` | Panel de Cloudflare, permiso *Cloudflare Pages: Edit* |
 | `CLOUDFLARE_ACCOUNT_ID` | Panel de Cloudflare, en la barra lateral |
 
-Para subir la imagen a GHCR no hace falta secreto: vale el `GITHUB_TOKEN` que el propio
-workflow recibe, con permiso `packages: write`.
+El *deploy hook* es una URL con un testigo dentro: quien la tenga puede disparar un
+despliegue, así que va como secreto y no como variable.
 
 Los secretos de la aplicación (`JWT_SECRET`, base de datos, correo) **no** se ponen aquí:
-viven en la configuración del servicio de Koyeb, y así no pasan por el registro de
+viven en la configuración del servicio de Render, y así no pasan por el registro de
 ejecuciones de GitHub.
 
 ---
 
 ## Lo que cuesta y lo que duele
 
-**Coste: 0 €.** Las tres piezas —Neon, Koyeb y Cloudflare Pages— están en su capa
-gratuita, y ninguna pide tarjeta.
+**Coste: 0 €.** Las tres piezas —Neon, Render y Cloudflare Pages— están en su capa
+gratuita.
 
 Lo que hay que asumir a cambio:
 
-- **Arranque en frío, y no de dos segundos.** Koyeb baja la instancia a cero tras una
-  hora sin tráfico, y levantar una JVM con 0,1 vCPU lleva su tiempo; Neon hace lo mismo
-  con la base de datos a los 5 minutos, así que se suman. Cuenta con **medio minuto largo
-  en la primera petición del día**. El armazón de la PWA se sirve de la caché del service
+- **Arranque en frío, y no de dos segundos.** Render duerme el servicio a los 15 minutos
+  sin tráfico, y levantar Spring Boot con 0,1 vCPU lleva su tiempo; Neon hace lo mismo
+  con la base de datos a los 5 minutos, así que se suman. Cuenta con **uno o dos minutos
+  en la primera petición del día**, y con volver a pagarlo si dejáis la aplicación
+  aparcada un cuarto de hora. El armazón de la PWA se sirve de la caché del service
   worker, así que la aplicación *se ve* al instante aunque los datos tarden. Es lo que se
   paga por no pagar: si un día estorba, Fly.io por 1-4 € al mes lo quita.
-- **Una sola instancia gratuita por organización en Koyeb.** Si más adelante hace falta
-  desplegar otra cosa, no cabe en la misma cuenta gratuita.
+- **La bolsa de horas es compartida** con lo demás que haya en el workspace, y agotarla
+  suspende todo. Ver [«Vigilar la bolsa de horas»](#vigilar-la-bolsa-de-horas-de-render).
 - **Sin copia de seguridad automática.** Neon guarda historial reciente, pero eso no es
   una copia: conviene un `pg_dump` periódico ([OPERACION.md §8](OPERACION.md)).
-- **Las capas gratuitas cambian.** Este mismo documento ya ha cambiado de plataforma dos
-  veces. Es el motivo de que todo esté en `Dockerfile` y `docker-compose.yml`: mudarse es
-  cuestión de horas, y de que lo único propio de Koyeb sea un paso de este manual.
+- **Las capas gratuitas cambian.** Este mismo documento ya ha cambiado de plataforma
+  varias veces. Es el motivo de que todo esté en `Dockerfile` y `docker-compose.yml`:
+  mudarse es cuestión de horas, y de que lo único propio de Render sea `render.yaml` y un
+  paso de este manual.
 
 ### Si prefieres pagar y no esperar: Fly.io
 
@@ -297,8 +304,14 @@ fly deploy
 y eso es intencionado ([OPERACION.md §1](OPERACION.md)). Fly reinicia solo al cambiar un
 secreto, así que el paso 4 es `fly secrets set` en lugar de tocar el panel.
 
-Ventaja real sobre Koyeb: región `mad` en vez de Fráncfort, una vCPU compartida entera en
-vez de 0,1, y por tanto un arranque en frío de segundos y no de medio minuto.
+Ventaja real sobre Render: región `mad` en vez de Fráncfort, una vCPU compartida entera
+en vez de 0,1 —y por tanto un arranque en frío de segundos, no de minutos— y una bolsa
+que no comparte con nada.
+
+**Koyeb** es la otra salida a coste cero, si lo que estorba es compartir bolsa: una
+instancia gratuita por organización, 512 MB y 0,1 vCPU en Fráncfort, y duerme **a la
+hora** en vez de a los 15 minutos, así que se notan menos los arranques en frío. A cambio
+sólo despliega imágenes ya construidas, así que habría que publicarla antes en GHCR.
 
 ---
 
@@ -310,9 +323,9 @@ vez de 0,1, y por tanto un arranque en frío de segundos y no de medio minuto.
 | El botón de passkey no hace nada | `WEBAUTHN_RP_ID` con el dominio de la API en vez del del frontend. |
 | No aparece el botón de passkey | Sin HTTPS. El navegador no expone la API fuera de un contexto seguro. |
 | `/actuator/health` responde `DOWN` | Base de datos: revisa `sslmode=require` y las credenciales. |
-| La primera petición del día tarda muchísimo | Normal: arranque en frío de Koyeb más el de Neon. Si tarda *siempre*, es que el servicio se está reiniciando: mira los logs. |
-| El servicio de Koyeb se reinicia en bucle al desplegar | *Grace period* del health check demasiado corto. Con 0,1 vCPU hacen falta 90 s (paso 2.2). |
-| Koyeb no puede descargar la imagen | El paquete de GHCR sigue siendo privado. Hazlo público (paso 2.1). |
+| La primera petición del día tarda muchísimo | Normal: arranque en frío de Render más el de Neon. Si tarda *siempre*, es que el servicio se está reiniciando: mira los logs. |
+| El despliegue parece colgado y no acaba | Casi siempre está arrancando: con 0,1 vCPU, Spring Boot y Flyway pasan del minuto antes de que responda el health check (paso 2.2). |
+| Todos los servicios gratuitos suspendidos a la vez | Se agotaron las 750 h del workspace. No es un fallo de esta aplicación: es la bolsa compartida. |
 | El enlace de invitación no lleva a ninguna parte | `APP_BASE_URL` con el valor de desarrollo. El código tecleado a mano sí funciona, por eso pasa desapercibido. |
 | El enlace del correo apunta a `localhost` | Falta `APP_BASE_URL`. |
 | No llega ningún correo | Falta `MAIL_HOST`; la API lo avisa con un `WARN` en cada intento. |
