@@ -115,7 +115,13 @@ class FixedExpenseApiTest extends ApiTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.amount").value(95.00));
 
-        assertThat(gastosDelMes(TOKEN, MES).get(0).get("amount").asDouble()).isEqualTo(95.00);
+        JsonNode esteMes = gastosDelMes(TOKEN, MES).get(0);
+        assertThat(esteMes.get("amount").asDouble()).isEqualTo(95.00);
+        // Y sigue siendo el gasto de la plantilla: corregir el importe de un mes no lo
+        // convierte en un gasto suelto. Antes de tener edicion en la pantalla habia que
+        // borrarlo y volver a anotarlo, y eso si rompia el vinculo.
+        assertThat(esteMes.get("fixedExpenseId").asText()).isNotBlank();
+
         assertThat(gastosDelMes(TOKEN, MES_SIGUIENTE).get(0).get("amount").asDouble())
                 .isEqualTo(50.00);
     }

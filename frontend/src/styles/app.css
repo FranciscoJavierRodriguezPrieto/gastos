@@ -447,6 +447,18 @@ body[data-estado='anonimo'] .app {
   opacity: 0.6;
 }
 
+.movimiento__acciones {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* El formulario de edición ocupa la fila entera: si no, los campos se apelotonan
+   contra el importe y la fecha se queda sin sitio. */
+.movimiento--editando {
+  display: block;
+}
+
 /* ------------------------------------------------------------------ formularios */
 
 .formulario {
