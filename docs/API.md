@@ -141,6 +141,23 @@ a ese escenario, con los requisitos concretos que incumple.
 En los programas, `maxPropertyPrice` y `maxApplicantAge` ausentes significan "sin
 límite".
 
+### Situación del hogar y fiscalidad
+
+La simulación admite tres campos opcionales, todos pensados para la normativa de Madrid
+([ADR-0008](adr/ADR-0008-normativa-madrid-2026.md)):
+
+| Campo | Por defecto | Qué cambia |
+|---|---|---|
+| `familyWithChildren` | `false` | Familia con hijos menores, numerosa o monoparental: da acceso a Mi Primera Vivienda al 100% sin límite de edad. |
+| `largeFamily` | `false` | Título de familia numerosa: ITP al 4%. |
+| `primaryResidence` | `true` | Vivienda habitual: condición de la rebaja del ITP y de los programas de primera vivienda. |
+
+`applicantAge` es la edad del **mayor** de los compradores: los programas exigen que todos
+cumplan el límite.
+
+`upfrontCosts` devuelve además `transferTaxRate` (el tipo de ITP aplicado) y
+`transferTaxBasis` (el motivo, en palabras). Los programas llevan `requiresFamily`.
+
 ## Operación
 
 | Método | Ruta | Descripción |

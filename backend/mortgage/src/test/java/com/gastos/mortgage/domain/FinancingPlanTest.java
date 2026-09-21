@@ -26,13 +26,12 @@ class FinancingPlanTest {
     }
 
     @Test
-    @DisplayName("la bonificacion autonomica para menores de 40 rebaja el ITP al 5,4%")
-    void appliesYoungBuyerRebate() {
-        UpfrontCosts costs = UpfrontCosts.of(Money.euros(280_000),
-                PurchaseCostsPolicy.madridSecondHandYoungBuyer());
+    @DisplayName("sin circunstancias personales se aplica el tipo general, que es el peor caso")
+    void withoutApplicantUsesGeneralRate() {
+        UpfrontCosts costs = UpfrontCosts.of(Money.euros(200_000), PurchaseCostsPolicy.madridSecondHand());
 
-        assertThat(costs.transferTax()).isEqualTo(Money.euros(15_120));
-        assertThat(costs.total()).isEqualTo(Money.euros(26_320));
+        assertThat(costs.transferTaxRate()).isEqualTo(Percentage.of("6.00"));
+        assertThat(costs.transferTax()).isEqualTo(Money.euros(12_000));
     }
 
     @Test

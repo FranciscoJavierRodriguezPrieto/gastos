@@ -56,6 +56,15 @@ public class MortgageScenarioEntity {
     @Column(name = "first_home", nullable = false)
     private boolean firstHome;
 
+    @Column(name = "family_with_children", nullable = false)
+    private boolean familyWithChildren;
+
+    @Column(name = "large_family", nullable = false)
+    private boolean largeFamily;
+
+    @Column(name = "primary_residence", nullable = false)
+    private boolean primaryResidence;
+
     @Column(name = "financing_mode", nullable = false, length = 20)
     private String financingMode;
 
@@ -79,7 +88,8 @@ public class MortgageScenarioEntity {
                                   BigDecimal availableSavings, BigDecimal targetReserve,
                                   BigDecimal annualNominalRate, int termYears,
                                   BigDecimal netMonthlyIncome, BigDecimal otherMonthlyDebts,
-                                  int applicantAge, boolean firstHome, String financingMode,
+                                  int applicantAge, boolean firstHome, boolean familyWithChildren,
+                                  boolean largeFamily, boolean primaryResidence, String financingMode,
                                   UUID financingProgramId, BigDecimal manualLoanToValue,
                                   Instant createdAt, Instant updatedAt) {
         this.id = id;
@@ -94,6 +104,9 @@ public class MortgageScenarioEntity {
         this.otherMonthlyDebts = otherMonthlyDebts;
         this.applicantAge = applicantAge;
         this.firstHome = firstHome;
+        this.familyWithChildren = familyWithChildren;
+        this.largeFamily = largeFamily;
+        this.primaryResidence = primaryResidence;
         this.financingMode = financingMode;
         this.financingProgramId = financingProgramId;
         this.manualLoanToValue = manualLoanToValue;
@@ -167,5 +180,17 @@ public class MortgageScenarioEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isFamilyWithChildren() {
+        return familyWithChildren;
+    }
+
+    public boolean isLargeFamily() {
+        return largeFamily;
+    }
+
+    public boolean isPrimaryResidence() {
+        return primaryResidence;
     }
 }

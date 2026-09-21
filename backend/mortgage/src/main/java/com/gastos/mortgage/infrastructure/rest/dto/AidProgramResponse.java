@@ -14,6 +14,7 @@ public record AidProgramResponse(UUID id,
                                  BigDecimal maxPropertyPrice,
                                  Integer maxApplicantAge,
                                  boolean requiresFirstHome,
+                                 boolean requiresFamily,
                                  boolean active,
                                  String sourceNote) {
 }

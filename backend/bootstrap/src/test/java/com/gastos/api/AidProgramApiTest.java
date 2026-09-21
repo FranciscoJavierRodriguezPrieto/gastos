@@ -101,27 +101,35 @@ class AidProgramApiTest extends ApiTestSupport {
     }
 
     @Test
-    @DisplayName("el catalogo de partida es idempotente y trae las plantillas sin verificar apagadas")
+    @DisplayName("el catalogo de partida es idempotente y trae los cuatro accesos vigentes")
     void referenceCatalogIsIdempotentAndCautious() throws Exception {
         String token = tokenForNewHousehold();
 
         mockMvc.perform(post("/api/v1/mortgage/programs/reference-catalog")
                         .header(AUTHORIZATION, token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(4));
 
         // Pulsarlo dos veces no duplica nada.
         mockMvc.perform(post("/api/v1/mortgage/programs/reference-catalog")
                         .header(AUTHORIZATION, token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(4));
 
-        // La plantilla cuyas condiciones no estan confirmadas llega desactivada.
+        // Los cuatro accesos de Mi Primera Vivienda segun la Orden de 27/07/2026, todos
+        // activos y con el precio maximo de 425.000 EUR.
         mockMvc.perform(get("/api/v1/mortgage/programs").header(AUTHORIZATION, token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.active == false)].name")
-                        .value(org.hamcrest.Matchers.hasItem(
-                                org.hamcrest.Matchers.containsString("por verificar"))));
+                .andExpect(jsonPath("$[?(@.active == false)]").isEmpty())
+                .andExpect(jsonPath("$[*].maxPropertyPrice").value(
+                        org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(425000.0))))
+                // Una sola via familiar, y sin edad maxima: la API omite los nulos, asi que
+                // el campo no aparece.
+                .andExpect(jsonPath("$[?(@.requiresFamily == true)].name").value(
+                        org.hamcrest.Matchers.contains(
+                                org.hamcrest.Matchers.containsString("familias"))))
+                .andExpect(jsonPath("$[?(@.requiresFamily == true && @.maxApplicantAge)]")
+                        .isEmpty());
     }
 
     @Test

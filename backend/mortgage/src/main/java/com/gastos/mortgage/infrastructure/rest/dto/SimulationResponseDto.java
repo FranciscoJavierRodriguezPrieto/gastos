@@ -47,10 +47,17 @@ public record SimulationResponseDto(BigDecimal monthlyPayment,
                                         List<String> unmetCriteria) {
     }
 
-    /** Gastos no financiables de la compraventa. */
+    /**
+     * Gastos no financiables de la compraventa.
+     *
+     * @param transferTaxRate  tipo de ITP aplicado, ya con reducciones
+     * @param transferTaxBasis por que ese tipo, en palabras
+     */
     public record UpfrontCostsDto(BigDecimal transferTax,
                                   BigDecimal ancillaryCosts,
-                                  BigDecimal total) {
+                                  BigDecimal total,
+                                  BigDecimal transferTaxRate,
+                                  String transferTaxBasis) {
     }
 
     /** Como queda estructurada la operacion. */

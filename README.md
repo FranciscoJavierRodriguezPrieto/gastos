@@ -9,7 +9,7 @@ Madrid.
 Aplicación funcionalmente completa: backend, **PWA instalable con las cuatro pantallas**
 —incluida la herramienta de hipoteca con deslizadores y catálogo de programas editable—,
 **restablecimiento de contraseña por correo** y **acceso con passkey (WebAuthn)**.
-**177 tests de backend y 31 de frontend y scripts.**
+**200 tests de backend y 31 de frontend y scripts.**
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 

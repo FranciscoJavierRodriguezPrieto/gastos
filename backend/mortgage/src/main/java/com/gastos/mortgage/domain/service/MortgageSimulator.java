@@ -65,7 +65,8 @@ public final class MortgageSimulator {
         Guard.notNull(request, "request");
         Guard.notNull(programs, "programs");
 
-        UpfrontCosts upfrontCosts = UpfrontCosts.of(request.propertyPrice(), purchaseCostsPolicy);
+        UpfrontCosts upfrontCosts = UpfrontCosts.of(request.propertyPrice(), purchaseCostsPolicy,
+                request.applicant());
 
         FinancingDecision decision = financingSelector.decide(
                 request.financing(), request.propertyPrice(), request.applicant(), programs);

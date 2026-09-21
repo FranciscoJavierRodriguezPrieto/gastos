@@ -38,6 +38,9 @@ public class AidProgramEntity {
     @Column(name = "requires_first_home", nullable = false)
     private boolean requiresFirstHome;
 
+    @Column(name = "requires_family", nullable = false)
+    private boolean requiresFamily;
+
     @Column(nullable = false)
     private boolean active;
 
@@ -50,7 +53,8 @@ public class AidProgramEntity {
 
     public AidProgramEntity(UUID id, UUID householdId, String name, BigDecimal maxLoanToValue,
                             BigDecimal maxPropertyPrice, Integer maxApplicantAge,
-                            boolean requiresFirstHome, boolean active, String sourceNote) {
+                            boolean requiresFirstHome, boolean requiresFamily, boolean active,
+                            String sourceNote) {
         this.id = id;
         this.householdId = householdId;
         this.name = name;
@@ -58,6 +62,7 @@ public class AidProgramEntity {
         this.maxPropertyPrice = maxPropertyPrice;
         this.maxApplicantAge = maxApplicantAge;
         this.requiresFirstHome = requiresFirstHome;
+        this.requiresFamily = requiresFamily;
         this.active = active;
         this.sourceNote = sourceNote;
     }
@@ -96,5 +101,9 @@ public class AidProgramEntity {
 
     public String getSourceNote() {
         return sourceNote;
+    }
+
+    public boolean isRequiresFamily() {
+        return requiresFamily;
     }
 }

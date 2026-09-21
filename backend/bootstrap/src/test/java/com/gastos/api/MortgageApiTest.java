@@ -39,10 +39,14 @@ class MortgageApiTest extends ApiTestSupport {
                         .content(simulation(200_000, 70_000, 6_000, "3.00", 30, 4_000, 225, 32)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.monthlyPayment").exists())
-                .andExpect(jsonPath("$.upfrontCosts.total").value(20000.00))
+                // Vivienda habitual de menos de 250.000: ITP bonificado al 5,4%.
+                .andExpect(jsonPath("$.upfrontCosts.total").value(18800.00))
+                .andExpect(jsonPath("$.upfrontCosts.transferTaxRate").value(5.40))
+                .andExpect(jsonPath("$.upfrontCosts.transferTaxBasis").value(
+                        org.hamcrest.Matchers.containsString("vivienda habitual")))
                 // El ahorro cubre de sobra la entrada minima, asi que el prestamo lo fija
                 // el ahorro aportado y no el LTV maximo.
-                .andExpect(jsonPath("$.financing.loanAmount").value(156000.00))
+                .andExpect(jsonPath("$.financing.loanAmount").value(154800.00))
                 .andExpect(jsonPath("$.financingDecision.appliedLoanToValue").value(80.00))
                 .andExpect(jsonPath("$.viability.verdict").value("OPTIMA"));
     }

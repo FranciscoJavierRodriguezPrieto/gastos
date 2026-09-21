@@ -25,6 +25,7 @@ public final class AidProgramRestMapper {
                 program.maxPropertyPrice() == null ? null : program.maxPropertyPrice().amount(),
                 program.maxApplicantAge(),
                 program.requiresFirstHome(),
+                program.requiresFamily(),
                 program.isActive(),
                 program.sourceNote());
     }
