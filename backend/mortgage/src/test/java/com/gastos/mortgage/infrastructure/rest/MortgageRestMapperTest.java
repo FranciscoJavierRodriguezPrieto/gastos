@@ -40,7 +40,7 @@ class MortgageRestMapperTest {
         return new SimulationRequestDto(
                 BigDecimal.valueOf(price), BigDecimal.valueOf(savings), BigDecimal.valueOf(reserve),
                 new BigDecimal(rate), years, BigDecimal.valueOf(income), BigDecimal.valueOf(debts),
-                age, true, mode, programId, manualLtv == null ? null : new BigDecimal(manualLtv));
+                age, true, null, null, null, mode, programId, manualLtv == null ? null : new BigDecimal(manualLtv));
     }
 
     @Test
@@ -190,7 +190,8 @@ class MortgageRestMapperTest {
         assertThat(response.viability().verdict()).isEqualTo("OPTIMA");
         assertThat(response.viability().blockingReasons()).isEmpty();
         assertThat(response.viability().warnings()).isEmpty();
+        // 4.000 - 652,65 de cuota - 225 del coche. La cuota ya lleva el ITP bonificado.
         assertThat(response.viability().residualIncome().doubleValue())
-                .isCloseTo(3_117.30, Offset.offset(1.0));
+                .isCloseTo(3_122.35, Offset.offset(1.0));
     }
 }

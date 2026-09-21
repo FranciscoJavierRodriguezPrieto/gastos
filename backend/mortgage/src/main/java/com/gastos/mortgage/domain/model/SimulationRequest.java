@@ -63,10 +63,10 @@ public record SimulationRequest(Money propertyPrice,
     }
 
     public SimulationRequest withNetMonthlyIncome(Money newIncome) {
-        ApplicantProfile updated = new ApplicantProfile(newIncome, applicant.otherMonthlyDebts(),
-                applicant.age(), applicant.firstHome());
+        // Se conserva el resto del perfil: perder aqui la situacion familiar cambiaria el
+        // ITP y los programas aplicables a mitad de un barrido de ingresos.
         return new SimulationRequest(propertyPrice, availableSavings, targetReserve, annualNominalRate,
-                termYears, updated, financing);
+                termYears, applicant.withNetMonthlyIncome(newIncome), financing);
     }
 
     public SimulationRequest withFinancing(FinancingChoice newFinancing) {

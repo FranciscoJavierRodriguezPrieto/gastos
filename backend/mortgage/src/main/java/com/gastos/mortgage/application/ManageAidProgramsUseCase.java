@@ -37,19 +37,20 @@ public class ManageAidProgramsUseCase {
 
     public AidProgram create(HouseholdId householdId, String name, Percentage maxLoanToValue,
                              Money maxPropertyPrice, Integer maxApplicantAge,
-                             boolean requiresFirstHome, boolean active, String sourceNote) {
+                             boolean requiresFirstHome, boolean requiresFamily, boolean active,
+                             String sourceNote) {
         Guard.notNull(householdId, "householdId");
         return repository.save(AidProgram.create(householdId, name, maxLoanToValue, maxPropertyPrice,
-                maxApplicantAge, requiresFirstHome, active, sourceNote));
+                maxApplicantAge, requiresFirstHome, requiresFamily, active, sourceNote));
     }
 
     public AidProgram update(HouseholdId householdId, UUID programId, String name,
                              Percentage maxLoanToValue, Money maxPropertyPrice,
-                             Integer maxApplicantAge, boolean requiresFirstHome, boolean active,
-                             String sourceNote) {
+                             Integer maxApplicantAge, boolean requiresFirstHome,
+                             boolean requiresFamily, boolean active, String sourceNote) {
         AidProgram program = requireOwned(householdId, programId);
         program.update(name, maxLoanToValue, maxPropertyPrice, maxApplicantAge, requiresFirstHome,
-                active, sourceNote);
+                requiresFamily, active, sourceNote);
         return repository.save(program);
     }
 

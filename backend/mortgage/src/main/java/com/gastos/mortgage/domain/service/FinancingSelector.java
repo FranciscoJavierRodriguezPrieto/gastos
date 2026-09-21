@@ -38,7 +38,7 @@ public final class FinancingSelector {
         Guard.notNull(programs, "programs");
 
         List<ProgramEligibility> evaluations = programs.stream()
-                .map(program -> program.evaluate(propertyPrice, applicant.age(), applicant.firstHome()))
+                .map(program -> program.evaluate(propertyPrice, applicant))
                 .toList();
 
         return switch (choice.mode()) {

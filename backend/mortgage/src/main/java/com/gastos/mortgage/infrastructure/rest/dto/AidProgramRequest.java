@@ -41,9 +41,20 @@ public record AidProgramRequest(
         @NotNull(message = "Indique si el programa exige primera vivienda")
         Boolean requiresFirstHome,
 
+        /**
+         * Solo para familias numerosas, monoparentales o con hijos menores a cargo.
+         * Opcional: si falta se entiende que no, que es lo que hacian los clientes antes
+         * de que existiera el campo.
+         */
+        Boolean requiresFamily,
+
         @NotNull(message = "Indique si el programa esta activo")
         Boolean active,
 
         @Size(max = 300, message = "La nota de origen no puede superar los 300 caracteres")
         String sourceNote) {
+
+    public boolean requiresFamilyOrDefault() {
+        return Boolean.TRUE.equals(requiresFamily);
+    }
 }

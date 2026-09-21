@@ -70,6 +70,15 @@ public record SimulationRequestDto(
         @NotNull(message = "Indique si es la primera vivienda")
         Boolean firstHome,
 
+        /** Familia numerosa, monoparental o con hijos menores a cargo. Por defecto, no. */
+        Boolean familyWithChildren,
+
+        /** Titulo oficial de familia numerosa: ITP al 4% en Madrid. Por defecto, no. */
+        Boolean largeFamily,
+
+        /** Sera la vivienda habitual. Por defecto, SI: es el caso de primera vivienda. */
+        Boolean primaryResidence,
+
         /**
          * AUTOMATICO, PROGRAMA o MANUAL. Si se omite se asume AUTOMATICO, que es lo que
          * espera quien solo mueve los deslizadores sin tocar la financiacion.

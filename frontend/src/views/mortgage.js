@@ -23,6 +23,9 @@ const ESTADO_INICIAL = {
   otherMonthlyDebts: 225,
   applicantAge: 32,
   firstHome: true,
+  familyWithChildren: false,
+  largeFamily: false,
+  primaryResidence: true,
   financingMode: 'AUTOMATICO',
   programId: null,
   manualLoanToValue: null,
@@ -206,16 +209,16 @@ function panelHogar(alCambiar) {
     alCambiar();
   };
 
-  const primeraVivienda = el('label', { class: 'casilla' }, [
+  const casilla = (campo, texto) => el('label', { class: 'casilla' }, [
     el('input', {
       type: 'checkbox',
-      checked: escenario.firstHome,
+      checked: escenario[campo],
       onChange: (evento) => {
-        escenario.firstHome = evento.target.checked;
+        escenario[campo] = evento.target.checked;
         alCambiar();
       },
     }),
-    el('span', { text: 'Es nuestra primera vivienda en propiedad' }),
+    el('span', { text: texto }),
   ]);
 
   return tarjeta('Vuestra situación', el('div', { class: 'controles' }, [
@@ -239,14 +242,24 @@ function panelHogar(alCambiar) {
     }),
     deslizador({
       id: 'edad',
-      etiqueta: 'Edad del solicitante más joven',
+      // La del MAYOR: Mi Primera Vivienda exige que todas las personas que compran
+      // cumplan el tope de edad, así que el que decide es el de más edad.
+      etiqueta: 'Edad del mayor de los dos',
       min: 18, max: 75, paso: 1,
       valor: escenario.applicantAge,
       formato: (v) => `${v} años`,
-      ayuda: 'Varias ayudas ponen un tope de edad.',
+      ayuda: 'Mi Primera Vivienda financia hasta el 100% hasta los 40, el 95% hasta los 45 '
+        + 'y el 90% hasta los 50. Cuenta la edad de quien tenga más.',
       alCambiar: actualizar('applicantAge'),
     }),
-    primeraVivienda,
+    casilla('firstHome', 'Es nuestra primera vivienda en propiedad'),
+    casilla('primaryResidence', 'Vamos a vivir en ella (vivienda habitual)'),
+    casilla('familyWithChildren',
+      'Tenemos hijos menores a cargo, o somos familia numerosa o monoparental'),
+    casilla('largeFamily', 'Tenemos título de familia numerosa'),
+    el('p', { class: 'texto-apoyo', text:
+      'Con hijos menores, Mi Primera Vivienda llega al 100% a cualquier edad. El título de '
+      + 'familia numerosa además baja el ITP al 4%.' }),
   ]));
 }
 
@@ -406,9 +419,14 @@ function desembolso(resultado) {
     el('p', { class: 'dato-grande amount', text: euros(resultado.cashRequiredAtSigning) }),
     el('ul', { class: 'desglose' }, [
       linea('Entrada', plan.downPayment),
-      linea('Impuesto de transmisiones (ITP)', gastos.transferTax),
+      linea(`Impuesto de transmisiones (ITP, ${porcentaje(gastos.transferTaxRate)})`,
+        gastos.transferTax),
       linea('Notaría, registro y gestoría', gastos.ancillaryCosts),
     ]),
+    // Por qué ese tipo y no otro: es lo primero que conviene contrastar con el notario.
+    gastos.transferTaxBasis
+      ? el('p', { class: 'texto-apoyo', text: gastos.transferTaxBasis })
+      : null,
     !plan.savingsSufficient
       ? el('p', { class: 'estado estado--error', role: 'alert',
         text: `Faltan ${euros(plan.shortfall)} para poder firmar.` })

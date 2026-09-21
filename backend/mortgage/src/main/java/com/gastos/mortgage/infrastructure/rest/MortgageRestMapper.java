@@ -46,7 +46,12 @@ public final class MortgageRestMapper {
                 Money.euros(dto.netMonthlyIncome()),
                 Money.euros(dto.otherMonthlyDebts()),
                 dto.applicantAge(),
-                dto.firstHome());
+                dto.firstHome(),
+                Boolean.TRUE.equals(dto.familyWithChildren()),
+                Boolean.TRUE.equals(dto.largeFamily()),
+                // Ausente cuenta como si: los clientes anteriores al campo simulaban
+                // siempre una vivienda para vivir en ella.
+                !Boolean.FALSE.equals(dto.primaryResidence()));
 
         return new SimulationRequest(
                 Money.euros(dto.propertyPrice()),
@@ -70,6 +75,9 @@ public final class MortgageRestMapper {
                 request.applicant().otherMonthlyDebts().amount(),
                 request.applicant().age(),
                 request.applicant().firstHome(),
+                request.applicant().familyWithChildren(),
+                request.applicant().largeFamily(),
+                request.applicant().primaryResidence(),
                 financing.mode().name(),
                 financing.programId(),
                 financing.manualLoanToValue() == null ? null : financing.manualLoanToValue().value());
@@ -124,7 +132,9 @@ public final class MortgageRestMapper {
         return new UpfrontCostsDto(
                 costs.transferTax().amount(),
                 costs.ancillaryCosts().amount(),
-                costs.total().amount());
+                costs.total().amount(),
+                costs.transferTaxRate().value(),
+                costs.transferTaxBasis());
     }
 
     private static FinancingPlanDto toDto(FinancingPlan plan) {

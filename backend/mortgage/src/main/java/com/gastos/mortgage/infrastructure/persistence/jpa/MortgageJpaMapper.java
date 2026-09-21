@@ -28,6 +28,7 @@ public final class MortgageJpaMapper {
                 program.maxPropertyPrice() == null ? null : program.maxPropertyPrice().amount(),
                 program.maxApplicantAge(),
                 program.requiresFirstHome(),
+                program.requiresFamily(),
                 program.isActive(),
                 program.sourceNote());
     }
@@ -41,6 +42,7 @@ public final class MortgageJpaMapper {
                 toMoney(entity.getMaxPropertyPrice()),
                 entity.getMaxApplicantAge(),
                 entity.isRequiresFirstHome(),
+                entity.isRequiresFamily(),
                 entity.isActive(),
                 entity.getSourceNote());
     }
@@ -64,6 +66,9 @@ public final class MortgageJpaMapper {
                 request.applicant().otherMonthlyDebts().amount(),
                 request.applicant().age(),
                 request.applicant().firstHome(),
+                request.applicant().familyWithChildren(),
+                request.applicant().largeFamily(),
+                request.applicant().primaryResidence(),
                 financing.mode().name(),
                 financing.programId(),
                 financing.manualLoanToValue() == null ? null : financing.manualLoanToValue().value(),
@@ -76,7 +81,10 @@ public final class MortgageJpaMapper {
                 Money.euros(entity.getNetMonthlyIncome()),
                 Money.euros(entity.getOtherMonthlyDebts()),
                 entity.getApplicantAge(),
-                entity.isFirstHome());
+                entity.isFirstHome(),
+                entity.isFamilyWithChildren(),
+                entity.isLargeFamily(),
+                entity.isPrimaryResidence());
 
         SimulationRequest request = new SimulationRequest(
                 Money.euros(entity.getPropertyPrice()),

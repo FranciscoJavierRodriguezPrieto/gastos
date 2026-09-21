@@ -154,18 +154,31 @@ gastos:
     window-seconds: 60
 
   mortgage:
-    # Parametros de negocio externalizados: cambian por normativa, no por codigo.
-    # Verificar contra la convocatoria vigente publicada por la Comunidad de Madrid.
+    # Baremos del simulador. Cambian por normativa, no por codigo: tocarlos aqui cambia
+    # el calculo sin recompilar (los lee MortgageProperties).
+    #
+    # Los programas de ayuda (Mi Primera Vivienda y demas) NO van aqui: son datos que el
+    # hogar edita desde la aplicacion, en Hipoteca > Programas de ayuda (ADR-0004).
     purchase-costs:
+      # ITP de la Comunidad de Madrid, vivienda de segunda mano. Revisado en 09/2026
+      # contra comunidad.madrid (Transmisiones Patrimoniales Onerosas).
       transfer-tax-rate: 6.00
+      # Bonificacion del 10% de la cuota para vivienda habitual de hasta 250.000 EUR,
+      # sin limite de edad: 6% -> 5,4% efectivo.
+      habitual-residence-rebate: 10.00
+      habitual-residence-rebate-limit: 250000
+      # Tipo reducido para familia numerosa en vivienda habitual. Incompatible con la
+      # bonificacion anterior; el simulador aplica el que sale mas barato.
+      large-family-rate: 4.00
+      # Notaria, registro y gestoria. Estimacion, no norma: varia con el precio y con la
+      # notaria. Conviene pedir provision de fondos antes de firmar.
       ancillary-costs-rate: 4.00
-    mi-primera-vivienda:
-      max-loan-to-value: 95.00
-      max-property-price: 390000
-      max-applicant-age: 35
+    # Criterio bancario. Ningun limite de DTI es legal en Espana: son las cifras con las
+    # que suelen trabajar las entidades.
     lending:
       optimal-housing-dti: 25.00
       max-housing-dti: 30.00
       optimal-total-dti: 35.00
       max-total-dti: 40.00
       min-residual-income: 1000
+      standard-loan-to-value: 80.00

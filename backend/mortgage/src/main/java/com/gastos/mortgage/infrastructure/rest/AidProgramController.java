@@ -62,6 +62,7 @@ public class AidProgramController {
                 AidProgramRestMapper.toOptionalMoney(request.maxPropertyPrice()),
                 request.maxApplicantAge(),
                 request.requiresFirstHome(),
+                request.requiresFamilyOrDefault(),
                 request.active(),
                 request.sourceNote()));
 
@@ -83,6 +84,7 @@ public class AidProgramController {
                 AidProgramRestMapper.toOptionalMoney(request.maxPropertyPrice()),
                 request.maxApplicantAge(),
                 request.requiresFirstHome(),
+                request.requiresFamilyOrDefault(),
                 request.active(),
                 request.sourceNote()));
     }

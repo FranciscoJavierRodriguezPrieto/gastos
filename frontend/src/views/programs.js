@@ -34,9 +34,10 @@ export async function vistaProgramas(raiz, cabecera, alVolver) {
 function aviso() {
   return el('div', { class: 'aviso' }, [
     el('p', { class: 'texto-apoyo', text:
-      'Las cifras de los programas las introducís vosotros y no están verificadas. '
-      + 'Contrastadlas con la convocatoria vigente publicada por la Comunidad de Madrid '
-      + 'antes de tomar ninguna decisión.' }),
+      'El catálogo de partida recoge Mi Primera Vivienda según la Orden de 27 de julio de '
+      + '2026 (BOCM nº 186, en vigor desde el 7 de agosto). Las normas cambian: revisad la '
+      + 'fecha de la nota de cada programa, y contrastad cualquier cifra que añadáis a mano, '
+      + 'antes de tomar una decisión.' }),
   ]);
 }
 
@@ -47,7 +48,7 @@ function listado(programas, repintar, alVolver) {
       await api.post('/mortgage/programs/reference-catalog', {});
       await repintar();
     },
-  }, 'Instalar catálogo de partida');
+  }, 'Instalar catálogo vigente');
 
   if (programas.length === 0) {
     return tarjeta('Programas', vacio(
@@ -111,6 +112,9 @@ function requisitos(programa) {
   if (programa.requiresFirstHome) {
     partes.push('primera vivienda');
   }
+  if (programa.requiresFamily) {
+    partes.push('familias con hijos, numerosas o monoparentales');
+  }
   return partes.join(' · ');
 }
 
@@ -121,6 +125,9 @@ function aCuerpo(programa) {
     maxPropertyPrice: programa.maxPropertyPrice ?? null,
     maxApplicantAge: programa.maxApplicantAge ?? null,
     requiresFirstHome: programa.requiresFirstHome,
+    // Sin esto, activar o desactivar un programa familiar desde la lista le quitaría el
+    // requisito y pasaría a aplicarse a cualquiera.
+    requiresFamily: Boolean(programa.requiresFamily),
     active: programa.active,
     sourceNote: programa.sourceNote ?? '',
   };
@@ -145,6 +152,10 @@ function formularioAlta(repintar) {
     el('input', { type: 'checkbox', checked: true }),
     el('span', { text: 'Exige que sea la primera vivienda' }),
   ]);
+  const soloFamilias = el('label', { class: 'casilla' }, [
+    el('input', { type: 'checkbox' }),
+    el('span', { text: 'Sólo para familias con hijos, numerosas o monoparentales' }),
+  ]);
   const activo = el('label', { class: 'casilla' }, [
     el('input', { type: 'checkbox' }),
     el('span', { text: 'Activarlo ya (sólo si has verificado las cifras)' }),
@@ -166,6 +177,7 @@ function formularioAlta(repintar) {
           maxPropertyPrice: precioMax.control.value === '' ? null : Number(precioMax.control.value),
           maxApplicantAge: edadMax.control.value === '' ? null : Number(edadMax.control.value),
           requiresFirstHome: primeraVivienda.querySelector('input').checked,
+          requiresFamily: soloFamilias.querySelector('input').checked,
           active: activo.querySelector('input').checked,
           sourceNote: origen.control.value.trim(),
         });
@@ -177,7 +189,7 @@ function formularioAlta(repintar) {
     },
   }, [
     nombre, ltv, precioMax, edadMax, origen,
-    el('div', { class: 'formulario__casillas' }, [primeraVivienda, activo]),
+    el('div', { class: 'formulario__casillas' }, [primeraVivienda, soloFamilias, activo]),
     el('button', { class: 'boton boton--principal', type: 'submit' }, 'Añadir programa'),
     aviso,
   ]);

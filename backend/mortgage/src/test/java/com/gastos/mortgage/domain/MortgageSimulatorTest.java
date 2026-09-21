@@ -304,17 +304,21 @@ class MortgageSimulatorTest {
         }
 
         @Test
-        @DisplayName("OPTIMA: cuota holgada, LTV del 78% y colchon tras la firma")
+        @DisplayName("OPTIMA: cuota holgada, LTV del 77% y colchon tras la firma")
         void optimalScenario() {
             SimulationRequest req = request(200_000, 70_000, 6_000, "3.00", 30,
                     applicant(4_000, 225, 32), FinancingChoice.automatic());
 
             SimulationResult result = simulator.simulate(req, List.of(miPrimeraVivienda()));
 
-            assertThat(result.financingPlan().loanAmount()).isEqualTo(Money.euros(156_000));
-            assertThat(result.monthlyPayment().amount().doubleValue()).isCloseTo(657.70, ONE_EURO);
-            assertThat(result.housingDti().value().doubleValue()).isCloseTo(16.44, Offset.offset(0.05));
-            assertThat(result.totalDti().value().doubleValue()).isCloseTo(22.07, Offset.offset(0.05));
+            // 200.000 EUR de vivienda habitual: ITP al 5,4% (10.800) + 4% de gastos
+            // (8.000) = 18.800. De los 64.000 disponibles tras el colchon, 45.200 van a la
+            // entrada y el prestamo queda en 154.800.
+            assertThat(result.upfrontCosts().total()).isEqualTo(Money.euros(18_800));
+            assertThat(result.financingPlan().loanAmount()).isEqualTo(Money.euros(154_800));
+            assertThat(result.monthlyPayment().amount().doubleValue()).isCloseTo(652.65, ONE_EURO);
+            assertThat(result.housingDti().value().doubleValue()).isCloseTo(16.32, Offset.offset(0.05));
+            assertThat(result.totalDti().value().doubleValue()).isCloseTo(21.94, Offset.offset(0.05));
             assertThat(result.viability().verdict()).isEqualTo(ViabilityVerdict.OPTIMA);
             assertThat(result.viability().warnings()).isEmpty();
         }
