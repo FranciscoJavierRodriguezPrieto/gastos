@@ -17,28 +17,66 @@ on:
       url_api:
         description: URL pública de la API (necesaria para el frontend)
         required: true
-        default: https://gastos-api.fly.dev
+        default: https://gastos-api.koyeb.app
 
 permissions:
   contents: read
 
 jobs:
   api:
-    name: API en Fly.io
+    name: API en Koyeb
     if: inputs.que == 'api' || inputs.que == 'ambos'
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Para subir la imagen a GHCR. No hace falta ningún secreto: vale el GITHUB_TOKEN
+      # que el propio workflow recibe.
+      packages: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Imprescindible para la cache de tipo gha: el driver de Docker que trae el runner
+      # no sabe exportarla.
+      - name: Preparar buildx
+        uses: docker/setup-buildx-action@v3
 
-      # Los secretos de la aplicación (JWT_SECRET, base de datos, correo) NO se pasan
-      # aquí: viven en `fly secrets`, se ponen una vez y no pasan por el registro de
-      # ejecuciones de GitHub. Ver docs/DESPLIEGUE.md.
-      - name: fly deploy
-        run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Entrar en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Dos etiquetas: `main`, que es la que el servicio de Koyeb tiene configurada y la
+      # que se vuelve a descargar en cada redespliegue, y el SHA, para poder mirar luego
+      # qué había desplegado exactamente.
+      - name: Construir y publicar la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gastos-api:main
+            ghcr.io/${{ github.repository_owner }}/gastos-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Preparar la CLI de Koyeb
+        uses: koyeb-community/koyeb-actions@v2
+        with:
+          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+
+      # Redespliega un servicio que YA EXISTE; no lo crea. La primera vez hay que
+      # crearlo a mano en el panel, apuntando a la etiqueta `main` de arriba y con sus
+      # variables de entorno (docs/DESPLIEGUE.md, paso 2).
+      #
+      # Los secretos de la aplicación viven en Koyeb y no aquí a propósito: así no pasan
+      # por el registro de ejecuciones de GitHub.
+      - name: Redesplegar en Koyeb
+        run: koyeb service redeploy gastos/api
 
   frontend:
     name: PWA en Cloudflare Pages

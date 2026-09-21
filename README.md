@@ -15,8 +15,10 @@ Aplicación funcionalmente completa: backend, **PWA instalable con las cuatro pa
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 
 **Todavía no está desplegado.** Los ficheros y el procedimiento están listos
-([DESPLIEGUE.md](docs/DESPLIEGUE.md)); falta ejecutarlo contra cuentas reales de Fly.io,
-Neon y Cloudflare.
+([DESPLIEGUE.md](docs/DESPLIEGUE.md)); falta ejecutarlo contra cuentas reales de Neon,
+Koyeb y Cloudflare. El destino cambió el 21/09/2026: **Render queda descartado** porque
+sus horas gratuitas son por workspace y agotarlas suspende *todos* los servicios
+gratuitos de la cuenta ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)).
 
 El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
@@ -43,7 +45,7 @@ El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 | Seguridad | Spring Security, JWT HS256, BCrypt ([ADR-0005](docs/adr/ADR-0005-autenticacion-con-jwt.md)) |
 | Frontend | PWA sin framework ni compilación ([ADR-0006](docs/adr/ADR-0006-frontend-sin-framework.md)) |
 | Passkeys | WebAuthn4J tras un puerto ([ADR-0007](docs/adr/ADR-0007-passkeys-con-webauthn4j.md)) |
-| Despliegue | Fly.io + Neon + Cloudflare Pages ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
+| Despliegue | Koyeb + Neon + Cloudflare Pages, coste 0 € ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
 
 ## Estructura
 
@@ -59,7 +61,7 @@ gastos/
 ├── frontend/            PWA: pantallas, cliente de la API y service worker
 ├── infra/               Dockerfile y docker-compose
 ├── scripts/             preparación del frontend para desplegar
-├── fly.toml             despliegue de la API en Fly.io
+├── fly.toml             alternativa de pago: la API en Fly.io
 └── docs/                arquitectura, ADR, flujo Git, seguridad, despliegue
 ```
 
