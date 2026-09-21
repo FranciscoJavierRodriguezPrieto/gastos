@@ -3,6 +3,7 @@ package com.gastos.config;
 import com.gastos.accounts.application.ManageAccountsUseCase;
 import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
+import com.gastos.expenses.application.ManageFixedExpensesUseCase;
 import com.gastos.iam.application.AuthenticateUseCase;
 import com.gastos.iam.application.InviteToHouseholdUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
@@ -23,6 +24,7 @@ import com.gastos.iam.domain.port.RefreshTokenRepository;
 import com.gastos.iam.domain.port.UserCredentialRepository;
 import com.gastos.iam.domain.port.UserRepository;
 import com.gastos.expenses.domain.port.ExpenseRepository;
+import com.gastos.expenses.domain.port.FixedExpenseRepository;
 import com.gastos.mortgage.application.ManageAidProgramsUseCase;
 import com.gastos.mortgage.application.SimulateMortgageUseCase;
 import com.gastos.mortgage.domain.port.AidProgramRepository;
@@ -43,8 +45,16 @@ import org.springframework.context.annotation.Configuration;
 public class UseCaseConfiguration {
 
     @Bean
-    public ManageExpensesUseCase manageExpensesUseCase(ExpenseRepository repository) {
-        return new ManageExpensesUseCase(repository);
+    public ManageExpensesUseCase manageExpensesUseCase(ExpenseRepository repository,
+                                                       ManageFixedExpensesUseCase fixedExpenses) {
+        return new ManageExpensesUseCase(repository, fixedExpenses);
+    }
+
+    @Bean
+    public ManageFixedExpensesUseCase manageFixedExpensesUseCase(FixedExpenseRepository fixedExpenses,
+                                                                  ExpenseRepository expenses,
+                                                                  Clock clock) {
+        return new ManageFixedExpensesUseCase(fixedExpenses, expenses, clock);
     }
 
     @Bean

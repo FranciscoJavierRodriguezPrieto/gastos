@@ -46,13 +46,17 @@ public class ExpenseEntity {
     @Column(name = "account_id")
     private UUID accountId;
 
+    /** La plantilla de gasto fijo que lo genero, o null si se registro a mano. */
+    @Column(name = "fixed_expense_id")
+    private UUID fixedExpenseId;
+
     protected ExpenseEntity() {
         // Requerido por JPA.
     }
 
     public ExpenseEntity(UUID id, UUID householdId, UUID registeredBy, String description,
                          BigDecimal amount, String category, String recurrence, LocalDate incurredOn,
-                         UUID accountId) {
+                         UUID accountId, UUID fixedExpenseId) {
         this.id = id;
         this.householdId = householdId;
         this.registeredBy = registeredBy;
@@ -62,6 +66,7 @@ public class ExpenseEntity {
         this.recurrence = recurrence;
         this.incurredOn = incurredOn;
         this.accountId = accountId;
+        this.fixedExpenseId = fixedExpenseId;
     }
 
     public UUID getId() {
@@ -98,5 +103,9 @@ public class ExpenseEntity {
 
     public UUID getAccountId() {
         return accountId;
+    }
+
+    public UUID getFixedExpenseId() {
+        return fixedExpenseId;
     }
 }

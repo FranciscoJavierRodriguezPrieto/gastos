@@ -5,12 +5,17 @@ import {
 import {
   desplazarMes, euros, fecha, hoyIso, mesActual, nombreMes,
 } from '../ui/format.js';
+import { tarjetaGastosFijos } from './fijos.js';
 
 /**
  * Gastos del mes.
  *
  * El catálogo de categorías y periodicidades se pide al servidor en lugar de escribirlo
  * aquí: si algún día se añade una categoría, esta pantalla la muestra sola.
+ *
+ * Los gastos fijos viven en su propia tarjeta, pero sus gastos aparecen en el listado
+ * como uno más: **al pedir el mes, el servidor los genera si faltaban**. Por eso aquí no
+ * hay nada que disparar ni ningún orden que respetar; basta con pedir el mes.
  */
 
 let mesVisible = mesActual();
@@ -39,6 +44,9 @@ async function pintar(raiz) {
       totales(resumen),
       formularioAlta(raiz),
       listado(gastos, raiz),
+      // Al tocar un gasto fijo hay que repintar el mes: puede haber aparecido o
+      // desaparecido un movimiento, y los totales cambian.
+      tarjetaGastosFijos({ alCambiar: () => pintar(raiz) }),
     );
   } catch (e) {
     raiz.replaceChildren(
@@ -184,6 +192,13 @@ function listado(gastos, raiz) {
         gasto.categoryLabel,
         ' · ',
         fecha(gasto.incurredOn),
+        gasto.fixedExpenseId
+          ? el('span', {
+            class: 'etiqueta etiqueta--fijo',
+            text: 'fijo',
+            title: 'Viene de un gasto fijo. Editarlo aquí cambia sólo este mes.',
+          })
+          : null,
         gasto.stableCommitment
           ? el('span', {
             class: 'etiqueta etiqueta--compromiso',

@@ -24,9 +24,12 @@ import java.util.List;
 public class ManageExpensesUseCase {
 
     private final ExpenseRepository repository;
+    private final ManageFixedExpensesUseCase fixedExpenses;
 
-    public ManageExpensesUseCase(ExpenseRepository repository) {
+    public ManageExpensesUseCase(ExpenseRepository repository,
+                                 ManageFixedExpensesUseCase fixedExpenses) {
         this.repository = Guard.notNull(repository, "repository");
+        this.fixedExpenses = Guard.notNull(fixedExpenses, "fixedExpenses");
     }
 
     public Expense register(RegisterExpenseCommand command) {
@@ -56,9 +59,22 @@ public class ManageExpensesUseCase {
         return requireOwned(householdId, expenseId);
     }
 
+    /**
+     * Gastos del mes, con los fijos ya incluidos.
+     *
+     * <p>Antes de leer se expanden los gastos fijos que falten
+     * ({@link ManageFixedExpensesUseCase#expand}). Es una escritura dentro de una
+     * lectura, y es deliberado: la alternativa era una tarea programada, y la API vive en
+     * una instancia que duerme cuando nadie la usa, asi que el dia 1 a las 00:00 no habria
+     * nadie para ejecutarla. Abrir el mes es la unica senal fiable de que alguien quiere
+     * ver ese mes.</p>
+     *
+     * <p>Es idempotente, asi que recargar la pantalla no duplica nada.</p>
+     */
     public List<Expense> listByMonth(HouseholdId householdId, YearMonth month) {
         Guard.notNull(householdId, "householdId");
         Guard.notNull(month, "month");
+        fixedExpenses.expand(householdId, month);
         return repository.findByMonth(householdId, month);
     }
 

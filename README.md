@@ -8,9 +8,9 @@ Madrid.
 
 Aplicación funcionalmente completa: backend, **PWA instalable con las cuatro pantallas**
 —incluida la herramienta de hipoteca con deslizadores y catálogo de programas editable—,
-**restablecimiento de contraseña por correo**, **acceso con passkey (WebAuthn)** e
-**invitación de la pareja con código de un solo uso**.
-**224 tests de backend y 31 de frontend y scripts.**
+**restablecimiento de contraseña por correo**, **acceso con passkey (WebAuthn)**,
+**invitación de la pareja con código de un solo uso** y **gastos fijos mensuales**.
+**267 tests de backend y 31 de frontend y scripts.**
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 
@@ -23,7 +23,8 @@ El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 ## Módulos funcionales
 
 1. **Resumen** — balance total, ingresos del hogar, KPI de superávit y distribución del gasto.
-2. **Gastos** — registro, categorización y prorrateo de gastos recurrentes.
+2. **Gastos** — registro, categorización y prorrateo de gastos recurrentes, más
+   **gastos fijos** que se anotan una vez y aparecen solos cada mes.
 3. **Mis Cuentas** — cuentas individuales y conjuntas, saldos y conciliación.
 4. **Herramientas de Hipoteca** — calculadora y análisis de viabilidad:
    - catálogo de programas de ayuda **editable desde la aplicación**, con tres modos de

@@ -102,12 +102,50 @@ Las razones de este diseño están en [ADR-0005](adr/ADR-0005-autenticacion-con-
 | Método | Ruta | Descripción |
 |---|---|---|
 | `POST` | `/expenses` | Registra un gasto. `201` + `Location`. |
-| `GET` | `/expenses?month=YYYY-MM` | Gastos del mes, del más reciente al más antiguo. |
+| `GET` | `/expenses?month=YYYY-MM` | Gastos del mes, del más reciente al más antiguo. **Genera de paso los gastos fijos que falten** (ver abajo). |
 | `GET` | `/expenses/summary?month=YYYY-MM` | Total, compromisos mensuales y desglose por categoría con su peso. |
 | `GET` | `/expenses/{id}` | Un gasto. |
 | `PUT` | `/expenses/{id}` | Modifica descripción, importe, categoría, periodicidad y fecha. |
 | `DELETE` | `/expenses/{id}` | Borra. `204`. |
 | `GET` | `/expenses/catalog` | Categorías y periodicidades admitidas, para que el frontend no mantenga una copia. |
+
+### Gastos fijos
+
+Lo que se repite cada mes: alquiler, teléfono, seguros. Se anota **una vez** y aparece
+solo en todos los meses.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/fixed-expenses` | Los gastos fijos del hogar, vigentes y dados de baja. |
+| `POST` | `/fixed-expenses` | Da de alta uno. Empieza en el mes en curso. `201`. |
+| `GET` | `/fixed-expenses/{id}` | Uno. |
+| `PUT` | `/fixed-expenses/{id}` | Cambia concepto, importe, categoría y día de cargo. |
+| `POST` | `/fixed-expenses/{id}/discontinue` | Deja de generar **desde el mes que viene**. |
+| `POST` | `/fixed-expenses/{id}/reactivate` | Lo devuelve a vigente. |
+| `DELETE` | `/fixed-expenses/{id}` | Borra la plantilla. `204`. |
+
+Estas rutas manejan **plantillas, no gastos**, y de esa distinción salen tres
+comportamientos que conviene tener claros:
+
+- **El gasto de un mes concreto se edita por `/expenses`**, como cualquier otro. La luz
+  son 50 € de media pero en enero fueron 95: se corrige el gasto de enero y febrero sigue
+  saliendo a 50.
+- **`PUT /fixed-expenses/{id}` sólo afecta a los meses aún no generados.** Si sube el
+  alquiler, lo ya pagado conserva su importe. El histórico sale gratis: cada mes guarda
+  ya el suyo, sin versionar nada.
+- **`DELETE` no borra el historial.** Los gastos que la plantilla generó se conservan —es
+  dinero que se pagó— y se quedan como gastos sueltos, con `fixedExpenseId` ausente. Para
+  dejar de generar sin más, `discontinue`.
+
+**Cuándo se generan.** No hay tarea programada: se generan **al pedir el mes**
+(`GET /expenses?month=…`). Es deliberado, porque la API se despliega en una instancia
+gratuita que duerme cuando nadie la usa, y una tarea programada a las 00:00 del día 1 no
+tendría a nadie despierto para ejecutarla. La operación es idempotente y está arbitrada
+por la clave primaria de la tabla de marcas, así que recargar la pantalla —que pide el
+listado y el resumen **en paralelo**— no duplica nada.
+
+Borrar el gasto generado de un mes **es definitivo**: la marca de "ya generado" sigue
+ahí, así que no reaparece al recargar.
 
 `monthlyCommitments` del resumen es lo que alimenta `otherMonthlyDebts` del simulador.
 
