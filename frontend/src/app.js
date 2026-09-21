@@ -8,6 +8,7 @@ import { vistaCuenta } from './views/account.js';
 import { vistaLogin } from './views/login.js';
 import { vistaOlvide, vistaRestablecer } from './views/recover.js';
 import { vistaResumen } from './views/summary.js';
+import { vistaUnirse } from './views/unirse.js';
 
 /**
  * Arranque y navegación.
@@ -34,13 +35,17 @@ function rutaActual() {
 /**
  * Rutas accesibles sin sesion.
  *
- * `restablecer` llega desde el enlace del correo, con el token en la propia URL, asi que
- * tiene que funcionar sin haber iniciado sesion.
+ * `restablecer` llega desde el enlace del correo y `unirse` desde el enlace de
+ * invitacion, los dos con su credencial en la propia URL: tienen que funcionar sin haber
+ * iniciado sesion.
  */
 function rutaPublica() {
   const destino = window.location.hash.replace(/^#\/?/, '');
   if (destino.startsWith('restablecer')) {
     return { nombre: 'restablecer', token: new URLSearchParams(destino.split('?')[1] ?? '').get('token') };
+  }
+  if (destino.startsWith('unirse')) {
+    return { nombre: 'unirse', codigo: new URLSearchParams(destino.split('?')[1] ?? '').get('codigo') };
   }
   if (destino.startsWith('olvide')) {
     return { nombre: 'olvide' };
@@ -57,6 +62,12 @@ async function pintarAplicacion() {
     return;
   }
 
+  if (publica?.nombre === 'unirse') {
+    document.body.dataset.estado = 'anonimo';
+    await vistaUnirse(raiz, publica.codigo, { alEntrar: entrar, alVolver: irAlAcceso });
+    return;
+  }
+
   if (!session.isAuthenticated) {
     document.body.dataset.estado = 'anonimo';
     if (publica?.nombre === 'olvide') {
@@ -66,6 +77,7 @@ async function pintarAplicacion() {
     await vistaLogin(raiz, {
       alEntrar: entrar,
       alOlvidar: () => { window.location.hash = '#/olvide'; },
+      alUnirse: () => { window.location.hash = '#/unirse'; },
     });
     return;
   }
@@ -149,7 +161,8 @@ async function entrar() {
     // Que falle /auth/me no impide usar la aplicación: sólo deja el nombre sin mostrar.
   }
   const destino = window.location.hash.replace(/^#\/?/, '');
-  if (!destino || destino.startsWith('restablecer') || destino.startsWith('olvide')) {
+  if (!destino || destino.startsWith('restablecer') || destino.startsWith('olvide')
+      || destino.startsWith('unirse')) {
     window.location.hash = '#/resumen';
   }
   await pintarAplicacion();
@@ -193,9 +206,10 @@ session.onChange((estado) => {
 });
 
 async function arrancar() {
-  // Quien llega desde el enlace del correo no debe pasar por el login, aunque tenga una
-  // sesion vieja guardada.
-  if (rutaPublica()?.nombre === 'restablecer') {
+  // Quien llega desde el enlace del correo o desde el de invitacion no debe pasar por el
+  // login, aunque tenga una sesion vieja guardada en este navegador.
+  const publicaAlArrancar = rutaPublica()?.nombre;
+  if (publicaAlArrancar === 'restablecer' || publicaAlArrancar === 'unirse') {
     await pintarAplicacion();
     registrarServiceWorker();
     return;

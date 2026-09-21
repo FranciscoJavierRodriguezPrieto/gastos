@@ -4,13 +4,16 @@ import com.gastos.accounts.application.ManageAccountsUseCase;
 import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
 import com.gastos.iam.application.AuthenticateUseCase;
+import com.gastos.iam.application.InviteToHouseholdUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
 import com.gastos.iam.application.PasskeyUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
+import com.gastos.iam.application.port.InvitationCodeService;
 import com.gastos.iam.application.port.ResetTokenService;
 import com.gastos.iam.application.port.WebAuthnCeremony;
 import com.gastos.iam.application.port.TokenService;
 import com.gastos.iam.domain.port.EmailSender;
+import com.gastos.iam.domain.port.HouseholdInvitationRepository;
 import com.gastos.iam.domain.port.HouseholdRepository;
 import com.gastos.iam.domain.port.PasskeyChallengeRepository;
 import com.gastos.iam.domain.port.PasskeyCredentialRepository;
@@ -94,6 +97,19 @@ public class UseCaseConfiguration {
                                          AuthenticateUseCase authenticate,
                                          Clock clock) {
         return new PasskeyUseCase(users, credentials, challenges, ceremony, authenticate, clock);
+    }
+
+    @Bean
+    public InviteToHouseholdUseCase inviteToHouseholdUseCase(HouseholdRepository households,
+                                                             HouseholdInvitationRepository invitations,
+                                                             UserRepository users,
+                                                             UserCredentialRepository credentials,
+                                                             PasswordHasher passwordHasher,
+                                                             InvitationCodeService codeService,
+                                                             AuthenticateUseCase authenticate,
+                                                             Clock clock) {
+        return new InviteToHouseholdUseCase(households, invitations, users, credentials,
+                passwordHasher, codeService, authenticate, clock);
     }
 
     @Bean

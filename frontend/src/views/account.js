@@ -1,6 +1,7 @@
 import { api, ApiError } from '../api/client.js';
 import { session } from '../api/session.js';
 import { PasskeyError, registrarPasskey, soportaPasskeys } from '../api/webauthn.js';
+import { tarjetaInvitacion } from './invitacion.js';
 import { campo, cargando, el, error as bloqueError, tarjeta } from '../ui/dom.js';
 import { euros, fechaHora } from '../ui/format.js';
 
@@ -26,6 +27,8 @@ export async function vistaCuenta(contenedor) {
       cabecera(),
       datosPersonales(yo),
       listaMiembros(miembros, yo),
+      // Devuelve null si no eres el titular: sólo el OWNER puede invitar.
+      tarjetaInvitacion(yo),
       tarjetaPasskeys(),
       formularioContrasena(),
     );
@@ -72,8 +75,7 @@ function listaMiembros(miembros, yo) {
 
   const ayuda = miembros.length < 2 && yo.role === 'OWNER'
     ? el('p', { class: 'texto-apoyo', text:
-      'Todavía sois uno. Para dar de alta al otro conviviente hace falta llamar a '
-      + 'POST /api/v1/auth/members; la pantalla para hacerlo llegará más adelante.' })
+      'Todavía sois uno. Invita al otro conviviente desde aquí abajo.' })
     : null;
 
   return tarjeta('Miembros del hogar', [el('ul', { class: 'lista' }, filas), ayuda]);

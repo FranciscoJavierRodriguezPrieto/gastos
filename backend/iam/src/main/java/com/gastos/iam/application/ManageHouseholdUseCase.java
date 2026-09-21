@@ -10,22 +10,21 @@ import com.gastos.iam.domain.port.HouseholdRepository;
 import com.gastos.iam.domain.port.PasswordHasher;
 import com.gastos.iam.domain.port.UserCredentialRepository;
 import com.gastos.iam.domain.port.UserRepository;
-import com.gastos.shared.domain.AuthenticatedUser;
 import com.gastos.shared.domain.DomainException;
 import com.gastos.shared.domain.Guard;
 import com.gastos.shared.domain.HouseholdId;
 import com.gastos.shared.domain.Money;
-import com.gastos.shared.domain.ResourceNotFoundException;
 import java.time.Clock;
 import java.util.List;
 
 /**
- * Alta del hogar y de su segundo miembro.
+ * Alta del hogar y consulta de sus miembros.
  *
  * <p><strong>No hay registro abierto.</strong> El alta inicial solo funciona mientras no
- * exista ningun hogar; a partir de ahi, la unica forma de entrar es que el {@code OWNER}
- * de alta al otro conviviente. Es una instalacion domestica para dos personas: dejar el
- * registro abierto seria regalar una cuenta a cualquiera que encuentre la URL.</p>
+ * exista ningun hogar; a partir de ahi solo se entra con una invitacion del titular
+ * ({@link InviteToHouseholdUseCase}). Es una instalacion domestica para dos personas:
+ * dejar el registro abierto seria regalar una cuenta a cualquiera que encuentre la
+ * URL.</p>
  */
 public class ManageHouseholdUseCase {
 
@@ -74,41 +73,6 @@ public class ManageHouseholdUseCase {
                 clock.instant()));
 
         return authenticate.issueTokensFor(owner);
-    }
-
-    /**
-     * El OWNER da de alta al segundo conviviente.
-     *
-     * <p>El limite de dos miembros lo impone el agregado {@link Household}, no este
-     * metodo: asi la regla se cumple venga la peticion de donde venga.</p>
-     */
-    public User addMember(AuthenticatedUser requester, Email email, String displayName,
-                          char[] rawPassword, Money monthlyNetIncome) {
-        Guard.notNull(requester, "requester");
-        if (!requester.isOwner()) {
-            throw new NotAllowedException("Solo el titular del hogar puede dar de alta miembros");
-        }
-        PasswordPolicy.validate(rawPassword);
-        Guard.notNull(email, "email");
-
-        if (users.existsByEmail(email)) {
-            throw new DomainException("Ya existe un usuario con ese correo");
-        }
-
-        Household household = households.findById(requester.householdId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hogar no encontrado"));
-
-        User member = User.register(requester.householdId(), email, displayName, Role.MEMBER,
-                monthlyNetIncome);
-        // Añadir al agregado antes de persistir: si se supera el limite, salta aqui.
-        household.addMember(member);
-
-        households.save(household);
-        users.save(member);
-        credentials.save(UserCredential.of(member.id(), passwordHasher.hash(rawPassword),
-                clock.instant()));
-
-        return member;
     }
 
     public List<User> members(HouseholdId householdId) {

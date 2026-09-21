@@ -26,7 +26,35 @@ cliente pueda escribir.
 | `POST` | `/auth/password` | no | Cambia la contraseña. Exige la actual. `204`. |
 | `GET` | `/auth/me` | no | El usuario autenticado. |
 | `GET` | `/auth/members` | no | Miembros del hogar. |
-| `POST` | `/auth/members` | no | Da de alta al segundo conviviente. **Sólo el `OWNER`**; un `MEMBER` recibe `403`. |
+
+### Invitación de la pareja
+
+El segundo conviviente **se da de alta él mismo** con un código que genera el titular.
+No existe un endpoint para crear la cuenta de otra persona: la contraseña la elige su
+dueño y nadie más la ve.
+
+| Método | Ruta | Público | Descripción |
+|---|---|---|---|
+| `POST` | `/auth/invitations` | no | Genera el código. **Sólo el `OWNER`**; un `MEMBER` recibe `403`. `201`. |
+| `GET` | `/auth/invitations` | no | Si hay invitación vigente y hasta cuándo. **Nunca devuelve el código.** |
+| `DELETE` | `/auth/invitations` | no | Anula la invitación vigente. Siempre `204`. |
+| `POST` | `/auth/invitations/check` | sí | Valida un código y devuelve el hogar y quién invita. |
+| `POST` | `/auth/join` | sí | Alta con el código. Devuelve la sesión ya iniciada. `201`. |
+
+Tres cosas que conviene saber antes de usarlos:
+
+- **`POST /auth/invitations` es la única respuesta de la API que contiene el código.** Se
+  guarda su SHA-256, no el código, así que no hay forma de volver a consultarlo. Quien lo
+  pierda genera otro, y el anterior deja de valer.
+- **El código va en el cuerpo, nunca en la ruta.** Es una credencial, y lo que viaja en
+  la URL acaba en los registros de acceso del servidor y de cualquier intermediario.
+- **Un código desconocido, caducado, revocado o ya usado responden igual**: `400` con
+  `INVALID_INVITATION` y el mismo mensaje. Distinguirlos convertiría el alta en un
+  comprobador de códigos válidos.
+
+El formato es de 12 símbolos del alfabeto de Crockford (sin I, L, O ni U), que se
+presentan en grupos de cuatro: `F32G-FYCV-K6VQ`. Al validarlo se normaliza, así que dan
+igual los guiones, las mayúsculas y confundir la O con el cero.
 
 ### Passkeys (WebAuthn)
 

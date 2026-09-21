@@ -42,10 +42,16 @@ hogar**. En cuanto creas el tuyo, ese endpoint devuelve `422` para siempre.
 
 A partir de ahí:
 
-- **Sólo el `OWNER`** —quien creó el hogar— puede dar de alta al segundo conviviente,
-  con `POST /api/v1/auth/members`.
-- Un `MEMBER` que lo intente recibe `403`.
+- **Sólo el `OWNER`** —quien creó el hogar— puede invitar al segundo conviviente, con
+  `POST /api/v1/auth/invitations`. Eso genera un código; con él, la otra persona se da de
+  alta ella misma y **elige su propia contraseña**, que no ve nadie más, tampoco el
+  titular.
+- Un `MEMBER` que intente invitar recibe `403`.
 - **El hogar admite dos miembros como máximo.** El tercero se rechaza con `422`.
+
+El código vale **una sola vez**, caduca a los **siete días** y el titular puede anularlo
+antes (`DELETE /api/v1/auth/invitations`). Generar uno nuevo invalida el anterior: nunca
+hay dos en circulación.
 
 Es una instalación doméstica para dos personas: dejar el registro abierto sería regalar
 una cuenta a cualquiera que encuentre la URL.
@@ -193,14 +199,30 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 Devuelve ya la sesión iniciada. Guarda el `accessToken` para las siguientes llamadas y el
 `refreshToken` para renovarla.
 
-Después, dar de alta al segundo conviviente:
+Después, invitar al segundo conviviente. Primero el titular genera el código:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/members \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <accessToken>' \
-  -d '{"email":"otro@correo.es","displayName":"Conviviente","password":"otra-contrasena-larga","monthlyNetIncome":1800.00}'
+curl -X POST http://localhost:8080/api/v1/auth/invitations \
+  -H 'Authorization: Bearer <accessToken>'
 ```
+
+```json
+{"code":"F32G-FYCV-K6VQ","expiresAt":"2026-09-28T09:38:00Z","joinUrl":"http://localhost:5173/#/unirse?codigo=F32G-FYCV-K6VQ"}
+```
+
+**Apunta el código ahora**: se guarda su hash, no el código, así que esta respuesta es la
+única vez que existe. Si se pierde, se genera otro y el anterior deja de valer.
+
+Con ese código, la otra persona se da de alta ella misma —normalmente abriendo el
+`joinUrl`, que lleva a la pantalla de alta con el código ya puesto—, o por API:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/join \
+  -H 'Content-Type: application/json' \
+  -d '{"code":"F32G-FYCV-K6VQ","email":"otro@correo.es","displayName":"Conviviente","password":"otra-contrasena-larga","monthlyNetIncome":1800.00}'
+```
+
+Devuelve la sesión iniciada, igual que el alta del hogar.
 
 ---
 

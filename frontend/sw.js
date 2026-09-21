@@ -37,6 +37,8 @@ const ARMAZON = [
   '/src/views/mortgage.js',
   '/src/views/programs.js',
   '/src/views/summary.js',
+  '/src/views/invitacion.js',
+  '/src/views/unirse.js',
   '/src/styles/tokens.css',
   '/src/styles/app.css',
   '/src/styles/hipoteca.css',

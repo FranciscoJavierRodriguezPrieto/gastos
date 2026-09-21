@@ -135,6 +135,14 @@ gastos:
     # En Brevo tiene que ser un remitente verificado o el envio se rechaza.
     from: ${MAIL_FROM:gastos@localhost}
 
+  invitation:
+    # Dias, no minutos como el enlace de restablecimiento: entre que el titular manda el
+    # codigo y la otra persona se sienta a rellenar sus datos puede pasar una semana.
+    ttl: 7d
+    # Misma URL publica del frontend que usa el correo de restablecimiento: el enlace de
+    # invitacion lleva a la pantalla de alta con el codigo ya puesto.
+    base-url: ${APP_BASE_URL:http://localhost:5173}
+
   webauthn:
     # OJO: es el dominio del FRONTEND, no el de la API. Si la aplicacion se sirve en
     # gastos.example.com, aqui va eso (o example.com). Poner el dominio de la API hace

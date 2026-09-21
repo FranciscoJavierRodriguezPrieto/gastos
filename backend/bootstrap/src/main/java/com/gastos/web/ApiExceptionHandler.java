@@ -1,6 +1,7 @@
 package com.gastos.web;
 
 import com.gastos.iam.application.AuthenticateUseCase;
+import com.gastos.iam.application.InviteToHouseholdUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
 import com.gastos.iam.application.PasskeyUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
@@ -93,6 +94,21 @@ public class ApiExceptionHandler {
             PasskeyUseCase.PasskeyAlreadyRegisteredException e, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiError.of(409, "PASSKEY_ALREADY_REGISTERED", e.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    /**
+     * Codigo de invitacion invalido, caducado, revocado o ya usado.
+     *
+     * <p>Los cuatro casos responden igual, por el mismo motivo que el enlace de
+     * restablecimiento: distinguirlos convertiria la pantalla de alta en un comprobador
+     * de codigos validos.</p>
+     */
+    @ExceptionHandler(InviteToHouseholdUseCase.InvalidInvitationException.class)
+    public ResponseEntity<ApiError> handleInvalidInvitation(
+            InviteToHouseholdUseCase.InvalidInvitationException e, HttpServletRequest request) {
+        return ResponseEntity.badRequest()
+                .body(ApiError.of(400, "INVALID_INVITATION", e.getMessage(),
                         request.getRequestURI()));
     }
 

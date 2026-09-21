@@ -14,7 +14,7 @@ import { campo, el, error as bloqueError } from '../ui/dom.js';
  *
  * Al usuario no se le pide que elija: la pantalla ya sabe cuál toca.
  */
-export async function vistaLogin(contenedor, { alEntrar, alOlvidar }) {
+export async function vistaLogin(contenedor, { alEntrar, alOlvidar, alUnirse }) {
   const marco = el('div', { class: 'login' });
   contenedor.replaceChildren(marco);
 
@@ -30,7 +30,7 @@ export async function vistaLogin(contenedor, { alEntrar, alOlvidar }) {
 
   marco.replaceChildren(necesitaAlta
     ? formularioAlta(alEntrar)
-    : formularioAcceso(alEntrar, alOlvidar));
+    : formularioAcceso(alEntrar, alOlvidar, alUnirse));
 }
 
 function marca(subtitulo) {
@@ -41,7 +41,7 @@ function marca(subtitulo) {
   ]);
 }
 
-function formularioAcceso(alEntrar, alOlvidar) {
+function formularioAcceso(alEntrar, alOlvidar, alUnirse) {
   const correo = campo('email', 'Correo', {
     type: 'email',
     required: true,
@@ -96,6 +96,11 @@ function formularioAcceso(alEntrar, alOlvidar) {
     el('button', {
       class: 'boton boton--sutil', type: 'button', onClick: alOlvidar,
     }, 'He olvidado mi contraseña'),
+    // Quien llega con el enlace de invitación va directo a la pantalla de alta; esto es
+    // para quien sólo tiene el código, dictado o copiado suelto.
+    alUnirse ? el('button', {
+      class: 'boton boton--sutil', type: 'button', onClick: alUnirse,
+    }, 'Tengo un código de invitación') : null,
   ]);
 
   return formulario;
