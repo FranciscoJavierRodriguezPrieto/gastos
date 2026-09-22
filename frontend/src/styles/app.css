@@ -132,10 +132,20 @@ body[data-estado='anonimo'] .app {
 
 /* ------------------------------------------------------------------ contenido */
 
+/*
+ * El contenido vive en la segunda columna de la rejilla, que ocupa todo el ancho
+ * sobrante. Con un `max-width` pero sin margen automático se quedaba pegado al borde
+ * izquierdo de esa columna, y en una pantalla ancha todo el hueco se acumulaba a un
+ * lado: la aplicación parecía descolgada en vez de centrada.
+ *
+ * `margin-inline: auto` reparte ese hueco a los dos lados. En móvil no cambia nada,
+ * porque allí no sobra espacio.
+ */
 .contenido {
   padding: var(--space-6);
   max-width: 1100px;
   width: 100%;
+  margin-inline: auto;
 }
 
 .vista {
