@@ -266,9 +266,28 @@ npx wrangler pages deploy dist --project-name=gastos
 
 Apunta la URL que sale (`https://gastos.pages.dev`).
 
-> **No conectes el repositorio a Pages con construcción automática.** Publicaría
-> `frontend/` tal cual, con la configuración de desarrollo dentro. O se sube `dist/`, o
-> se usa el workflow de despliegue, que hace lo mismo.
+### Lo más cómodo: que lo construya Cloudflare
+
+No hace falta tener el repositorio clonado ni Node instalado. En Cloudflare, *Workers &
+Pages* → *Create* → *Pages* → **Connect to Git**, y se configura así:
+
+| Campo | Valor |
+|---|---|
+| Framework preset | **None** |
+| Build command | `node scripts/preparar-frontend.mjs https://TU-API.onrender.com` |
+| Build output directory | `dist` |
+| Branch | `main` |
+
+Cloudflare clona, ejecuta el script —que es Node puro, sin dependencias— y publica lo que
+queda en `dist/`.
+
+> **Lo que no hay que hacer es conectarlo sin ese `build command`.** Entonces Cloudflare
+> publicaría `frontend/` tal cual, con `config.js` apuntando a `localhost:8080` y la CSP
+> igual. La aplicación cargaría y no funcionaría nada, sin ningún error en el servidor que
+> lo explicase.
+
+**Si cambias la URL de la API**, hay que cambiarla en ese `build command` y volver a
+desplegar: es el único sitio donde vive.
 
 ---
 
