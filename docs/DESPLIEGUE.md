@@ -97,6 +97,8 @@ deja una aplicación que carga pero no puede ni hacer login.
 No hace falta crear ninguna tabla: **Flyway migra al arrancar**. La primera vez aplicará
 las siete migraciones de golpe, y en los logs de Render se ve una línea por cada una.
 
+---
+
 ## 2. API en Render
 
 Render construye la imagen desde `infra/Dockerfile` y despliega desde el repositorio: no
@@ -134,7 +136,7 @@ que hay que rellenar a mano:
 
 | Variable | Valor |
 |---|---|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://…/gastos?sslmode=require` |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://…/neondb?sslmode=require` (paso 1) |
 | `SPRING_DATASOURCE_USERNAME` | el de Neon |
 | `SPRING_DATASOURCE_PASSWORD` | el de Neon |
 | `MAIL_USERNAME` | el de Brevo |
