@@ -65,6 +65,12 @@ chore(build): fijar Java 21 como release del compilador
 
 Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 
+## Estado
+
+Todo lo de abajo está **integrado en `develop` y en `main`**. `main` dejó de ser el commit
+inicial el 22/09/2026: es la rama desde la que despliega Render (`render.yaml`), así que a
+partir de ahora significa *lo que está publicado*.
+
 ## Plan de ramas del proyecto
 
 | Orden | Rama | Estado | Contenido |
@@ -77,8 +83,8 @@ Un commit = un cambio con sentido propio. Nada de `wip` ni `varios arreglos`.
 | 6 | `feature/security-jwt` | Integrada | Spring Security, JWT con refresco rotatorio, usuarios en base de datos. Cierra OWASP API2. |
 | 7 | `feature/pwa-shell` | Integrada | PWA instalable: acceso, sesión, navegación, service worker, y las pantallas de Resumen, Gastos y Cuentas. |
 | 8 | `feature/mortgage-ui` | Integrada | Herramienta de hipoteca: deslizadores, catálogo de programas y veredicto. |
-| 9 | `feature/password-reset` | **Actual** | Restablecimiento por correo con Brevo, cambio de contraseña y pantalla de cuenta. |
+| 9 | `feature/password-reset` | Integrada | Restablecimiento por correo con Brevo, cambio de contraseña y pantalla de cuenta. |
 | 10 | `feature/passkeys` | Hecho | WebAuthn como alternativa a la contraseña. Encajó encima de JWT sin rehacer nada, como se preveía. |
 | 11 | `chore/deployment-pipeline` | Hecho | CI con imagen y revisión de dependencias, Dependabot, digests fijados, `fly.toml`, script de preparación del frontend y [manual de despliegue](DESPLIEGUE.md). Falta ejecutarlo de verdad contra las cuentas. |
-| 13 | `feature/gastos-fijos` | **Actual** | Gastos fijos como plantilla que se expande al abrir el mes. Corregir un mes no toca los demás y subir el importe no reescribe lo ya pagado. |
-| 12 | `feature/invitacion-pareja` | Hecho | El titular invita con un código de un solo uso y la pareja se da de alta ella misma eligiendo su contraseña. Sustituye a `POST /auth/members`, donde el titular elegía la contraseña del otro. Incluye cerrar el ADR-0002: la API va a **Render** (`render.yaml`), con la base de datos en Neon porque la PostgreSQL gratuita de Render caduca a los 30 días. |
+| 13 | `feature/gastos-fijos` | Integrada | Gastos fijos como plantilla que se expande al abrir el mes. Corregir un mes no toca los demás y subir el importe no reescribe lo ya pagado. |
+| 12 | `feature/invitacion-pareja` | Integrada | El titular invita con un código de un solo uso y la pareja se da de alta ella misma eligiendo su contraseña. Sustituye a `POST /auth/members`, donde el titular elegía la contraseña del otro. Incluye cerrar el ADR-0002: la API va a **Render** (`render.yaml`), con la base de datos en Neon porque la PostgreSQL gratuita de Render caduca a los 30 días. |
