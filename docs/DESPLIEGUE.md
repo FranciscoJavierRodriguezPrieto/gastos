@@ -97,6 +97,12 @@ deja una aplicación que carga pero no puede ni hacer login.
 No hace falta crear ninguna tabla: **Flyway migra al arrancar**. La primera vez aplicará
 las siete migraciones de golpe, y en los logs de Render se ve una línea por cada una.
 
+> **Neon sirve PostgreSQL 18** y el proyecto está verificado contra 16. El esquema es SQL
+> estándar a propósito —`uuid`, `numeric`, `varchar`, `timestamp`, `boolean`, `date`, nada
+> propietario— así que no debería notarse. Lo que sí importaba es la versión de Flyway:
+> la que gestiona Spring Boot 3.5.6 es anterior a PostgreSQL 18, y Flyway comprueba la
+> versión del servidor al arrancar. Por eso el `pom.xml` la fija explícitamente.
+
 ---
 
 ## 2. API en Render

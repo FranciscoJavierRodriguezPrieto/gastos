@@ -25,6 +25,16 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <archunit.version>1.3.0</archunit.version>
+        <!--
+          Spring Boot 3.5.6 gestiona Flyway 11.7.2, de abril de 2025 y por tanto anterior
+          a la salida de PostgreSQL 18. Neon sirve 18, y Flyway comprueba la version del
+          servidor al arrancar: una version que no reconoce puede impedir el arranque, que
+          es lo ultimo que se quiere descubrir en el primer despliegue.
+
+          Se fija una version que si conoce PostgreSQL 18. La comprobacion sigue viva en
+          los tests, porque usan las mismas migraciones contra H2 en modo PostgreSQL.
+        -->
+        <flyway.version>11.20.3</flyway.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
     </properties>
 
