@@ -406,6 +406,59 @@ body[data-estado='anonimo'] .app {
   color: var(--color-primary-deep);
 }
 
+/*
+ * Un movimiento puede llevar las dos etiquetas a la vez («fijo» y «compromiso»), así que
+ * tienen que distinguirse sin depender del color: el borde punteado de «fijo» se ve
+ * igual en escala de grises y para quien no distinga el verde del azul.
+ */
+.etiqueta--fijo {
+  background: transparent;
+  border: 1px dashed var(--color-primary-strong);
+  color: var(--color-text-secondary);
+}
+
+/* ------------------------------------------------------------------ gastos fijos */
+
+.fijos {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.fijos__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.fijos__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Dado de baja: sigue visible porque su historia cuenta, pero no compite por la vista. */
+.movimiento--inactivo {
+  opacity: 0.6;
+}
+
+.movimiento__acciones {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* El formulario de edición ocupa la fila entera: si no, los campos se apelotonan
+   contra el importe y la fecha se queda sin sitio. */
+.movimiento--editando {
+  display: block;
+}
+
 /* ------------------------------------------------------------------ formularios */
 
 .formulario {
@@ -652,6 +705,42 @@ body[data-estado='anonimo'] .app {
 .passkeys {
   display: grid;
   gap: var(--space-4);
+}
+
+.invitacion {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/*
+ * El código se enseña una sola vez y hay que poder leerlo o dictarlo sin equivocarse:
+ * monoespaciada para que todos los caracteres ocupen igual, y separación entre letras
+ * para distinguir los grupos de un vistazo.
+ */
+.invitacion__codigo {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  /* Que se pueda seleccionar con un doble toque si falla el portapapeles. */
+  user-select: all;
+}
+
+.invitacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.invitacion__acciones .boton {
+  flex: 1 1 12rem;
 }
 
 /* ------------------------------------------------------------------ móvil */

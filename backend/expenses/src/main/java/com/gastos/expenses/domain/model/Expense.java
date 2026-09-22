@@ -27,10 +27,11 @@ public final class Expense {
     private Recurrence recurrence;
     private LocalDate incurredOn;
     private final UUID accountId;
+    private final FixedExpenseId fixedExpenseId;
 
     private Expense(ExpenseId id, HouseholdId householdId, UserId registeredBy, String description,
                     Money amount, ExpenseCategory category, Recurrence recurrence, LocalDate incurredOn,
-                    UUID accountId) {
+                    UUID accountId, FixedExpenseId fixedExpenseId) {
         this.id = Guard.notNull(id, "id");
         this.householdId = Guard.notNull(householdId, "householdId");
         this.registeredBy = Guard.notNull(registeredBy, "registeredBy");
@@ -40,20 +41,38 @@ public final class Expense {
         this.recurrence = Guard.notNull(recurrence, "recurrence");
         this.incurredOn = Guard.notNull(incurredOn, "incurredOn");
         this.accountId = accountId;
+        this.fixedExpenseId = fixedExpenseId;
     }
 
     public static Expense register(HouseholdId householdId, UserId registeredBy, String description,
                                    Money amount, ExpenseCategory category, Recurrence recurrence,
                                    LocalDate incurredOn, UUID accountId) {
         return new Expense(ExpenseId.newId(), householdId, registeredBy, description, amount, category,
-                recurrence, incurredOn, accountId);
+                recurrence, incurredOn, accountId, null);
+    }
+
+    /**
+     * Gasto generado a partir de un {@link FixedExpense}.
+     *
+     * <p>Nace atado a su plantilla y por lo demas es un gasto normal: se edita, se borra
+     * y cuenta en los totales como cualquier otro. El vinculo solo sirve para no generarlo
+     * dos veces y para que la pantalla pueda decir de donde sale.</p>
+     */
+    public static Expense fromFixedExpense(HouseholdId householdId, UserId registeredBy,
+                                           String description, Money amount,
+                                           ExpenseCategory category, LocalDate incurredOn,
+                                           UUID accountId, FixedExpenseId fixedExpenseId) {
+        return new Expense(ExpenseId.newId(), householdId, registeredBy, description, amount,
+                category, Recurrence.MENSUAL, incurredOn, accountId,
+                Guard.notNull(fixedExpenseId, "fixedExpenseId"));
     }
 
     public static Expense rehydrate(ExpenseId id, HouseholdId householdId, UserId registeredBy,
                                     String description, Money amount, ExpenseCategory category,
-                                    Recurrence recurrence, LocalDate incurredOn, UUID accountId) {
+                                    Recurrence recurrence, LocalDate incurredOn, UUID accountId,
+                                    FixedExpenseId fixedExpenseId) {
         return new Expense(id, householdId, registeredBy, description, amount, category, recurrence,
-                incurredOn, accountId);
+                incurredOn, accountId, fixedExpenseId);
     }
 
     public void recategorize(ExpenseCategory newCategory) {
@@ -139,5 +158,14 @@ public final class Expense {
 
     public UUID accountId() {
         return accountId;
+    }
+
+    /** La plantilla de la que salio, o null si se registro a mano. */
+    public FixedExpenseId fixedExpenseId() {
+        return fixedExpenseId;
+    }
+
+    public boolean comesFromFixedExpense() {
+        return fixedExpenseId != null;
     }
 }

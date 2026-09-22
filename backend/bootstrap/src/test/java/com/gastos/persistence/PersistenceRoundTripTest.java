@@ -9,7 +9,10 @@ import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.domain.model.Expense;
 import com.gastos.expenses.domain.model.ExpenseCategory;
 import com.gastos.expenses.domain.model.Recurrence;
+import com.gastos.expenses.domain.model.ExpenseCategory;
+import com.gastos.expenses.domain.model.FixedExpense;
 import com.gastos.expenses.domain.port.ExpenseRepository;
+import com.gastos.expenses.domain.port.FixedExpenseRepository;
 import com.gastos.mortgage.domain.model.AidProgram;
 import com.gastos.mortgage.domain.model.ApplicantProfile;
 import com.gastos.mortgage.domain.model.FinancingChoice;
@@ -52,6 +55,9 @@ class PersistenceRoundTripTest {
 
     @Autowired
     private ExpenseRepository expenseRepository;
+
+    @Autowired
+    private FixedExpenseRepository fixedExpenseRepository;
 
     @Autowired
     private AidProgramRepository aidProgramRepository;
@@ -235,5 +241,32 @@ class PersistenceRoundTripTest {
         assertThat(expenseRepository.findById(theirs, expense.id())).isEmpty();
         assertThat(aidProgramRepository.findById(theirs, program.id())).isEmpty();
         assertThat(accountRepository.findAllByHousehold(theirs)).isEmpty();
+    }
+
+    /**
+     * La reserva de un mes la arbitra la clave primaria de {@code fixed_expense_application},
+     * no una comprobacion previa en memoria.
+     *
+     * <p>Este test existe porque el fallo real se escapo a los demas: la pantalla pide el
+     * listado y el resumen <strong>en paralelo</strong>, los dos expandian el mes, y el
+     * segundo reventaba con una violacion de clave. Las pruebas que llamaban en serie no
+     * podian verlo; esta va directa al arbitro.</p>
+     */
+    @Test
+    @DisplayName("un mes solo se puede reservar una vez, y el segundo no revienta")
+    void claimingAMonthIsExclusive() {
+        HouseholdId household = HouseholdId.newId();
+        FixedExpense alquiler = fixedExpenseRepository.save(FixedExpense.create(
+                household, UserId.newId(), "Alquiler", Money.euros("800.00"),
+                ExpenseCategory.VIVIENDA, 1, null, YearMonth.of(2026, 3)));
+
+        assertThat(fixedExpenseRepository.claimFor(alquiler.id(), YearMonth.of(2026, 3))).isTrue();
+        // El segundo NO lanza: devuelve false y quien llama simplemente no genera nada.
+        assertThat(fixedExpenseRepository.claimFor(alquiler.id(), YearMonth.of(2026, 3))).isFalse();
+        // Otro mes sigue libre.
+        assertThat(fixedExpenseRepository.claimFor(alquiler.id(), YearMonth.of(2026, 4))).isTrue();
+
+        assertThat(fixedExpenseRepository.findAppliedIn(household, YearMonth.of(2026, 3)))
+                .containsExactly(alquiler.id());
     }
 }

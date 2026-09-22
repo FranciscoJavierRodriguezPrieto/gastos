@@ -3,14 +3,18 @@ package com.gastos.config;
 import com.gastos.accounts.application.ManageAccountsUseCase;
 import com.gastos.accounts.domain.port.AccountRepository;
 import com.gastos.expenses.application.ManageExpensesUseCase;
+import com.gastos.expenses.application.ManageFixedExpensesUseCase;
 import com.gastos.iam.application.AuthenticateUseCase;
+import com.gastos.iam.application.InviteToHouseholdUseCase;
 import com.gastos.iam.application.ManageHouseholdUseCase;
 import com.gastos.iam.application.PasskeyUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
+import com.gastos.iam.application.port.InvitationCodeService;
 import com.gastos.iam.application.port.ResetTokenService;
 import com.gastos.iam.application.port.WebAuthnCeremony;
 import com.gastos.iam.application.port.TokenService;
 import com.gastos.iam.domain.port.EmailSender;
+import com.gastos.iam.domain.port.HouseholdInvitationRepository;
 import com.gastos.iam.domain.port.HouseholdRepository;
 import com.gastos.iam.domain.port.PasskeyChallengeRepository;
 import com.gastos.iam.domain.port.PasskeyCredentialRepository;
@@ -20,6 +24,7 @@ import com.gastos.iam.domain.port.RefreshTokenRepository;
 import com.gastos.iam.domain.port.UserCredentialRepository;
 import com.gastos.iam.domain.port.UserRepository;
 import com.gastos.expenses.domain.port.ExpenseRepository;
+import com.gastos.expenses.domain.port.FixedExpenseRepository;
 import com.gastos.mortgage.application.ManageAidProgramsUseCase;
 import com.gastos.mortgage.application.SimulateMortgageUseCase;
 import com.gastos.mortgage.domain.port.AidProgramRepository;
@@ -40,8 +45,16 @@ import org.springframework.context.annotation.Configuration;
 public class UseCaseConfiguration {
 
     @Bean
-    public ManageExpensesUseCase manageExpensesUseCase(ExpenseRepository repository) {
-        return new ManageExpensesUseCase(repository);
+    public ManageExpensesUseCase manageExpensesUseCase(ExpenseRepository repository,
+                                                       ManageFixedExpensesUseCase fixedExpenses) {
+        return new ManageExpensesUseCase(repository, fixedExpenses);
+    }
+
+    @Bean
+    public ManageFixedExpensesUseCase manageFixedExpensesUseCase(FixedExpenseRepository fixedExpenses,
+                                                                  ExpenseRepository expenses,
+                                                                  Clock clock) {
+        return new ManageFixedExpensesUseCase(fixedExpenses, expenses, clock);
     }
 
     @Bean
@@ -94,6 +107,19 @@ public class UseCaseConfiguration {
                                          AuthenticateUseCase authenticate,
                                          Clock clock) {
         return new PasskeyUseCase(users, credentials, challenges, ceremony, authenticate, clock);
+    }
+
+    @Bean
+    public InviteToHouseholdUseCase inviteToHouseholdUseCase(HouseholdRepository households,
+                                                             HouseholdInvitationRepository invitations,
+                                                             UserRepository users,
+                                                             UserCredentialRepository credentials,
+                                                             PasswordHasher passwordHasher,
+                                                             InvitationCodeService codeService,
+                                                             AuthenticateUseCase authenticate,
+                                                             Clock clock) {
+        return new InviteToHouseholdUseCase(households, invitations, users, credentials,
+                passwordHasher, codeService, authenticate, clock);
     }
 
     @Bean

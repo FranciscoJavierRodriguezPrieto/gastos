@@ -123,4 +123,3 @@ cuidado puesto en el servidor para no delatar qué cuentas hay.
 
 - **`connect-src` de la CSP** en `_headers` apunta a `http://localhost:8080`. Al desplegar
   hay que cambiarlo al dominio real de la API o la aplicación no podrá hablar con ella.
-- **Alta del segundo conviviente** desde la interfaz; hoy sólo por API.

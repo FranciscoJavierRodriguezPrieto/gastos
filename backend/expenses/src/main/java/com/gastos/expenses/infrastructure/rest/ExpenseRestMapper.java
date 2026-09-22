@@ -72,7 +72,8 @@ public final class ExpenseRestMapper {
                 expense.incurredOn(),
                 expense.accountId(),
                 expense.monthlyEquivalent().amount(),
-                expense.isStableCommitment());
+                expense.isStableCommitment(),
+                expense.fixedExpenseId() == null ? null : expense.fixedExpenseId().value());
     }
 
     public static List<ExpenseResponse> toResponses(List<Expense> expenses) {

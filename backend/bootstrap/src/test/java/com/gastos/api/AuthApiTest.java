@@ -1,6 +1,7 @@
 package com.gastos.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -218,44 +219,148 @@ class AuthApiTest extends ApiTestSupport {
 
     @Test
     @Order(10)
-    @DisplayName("solo el titular puede dar de alta al segundo conviviente")
-    void onlyOwnerCanAddMembers() throws Exception {
-        String memberPayload = """
-                {"email":"conviviente@ejemplo.es","displayName":"Conviviente",\
-                "password":"otra-contrasena-larga-valida","monthlyNetIncome":1800.00}""";
-
-        // Un MEMBER del mismo hogar no puede.
-        mockMvc.perform(post("/api/v1/auth/members")
-                        .header(AUTHORIZATION, tokenForMemberOf(ownerAccessToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(memberPayload))
+    @DisplayName("solo el titular puede generar el codigo de invitacion")
+    void onlyOwnerCanInvite() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/invitations")
+                        .header(AUTHORIZATION, tokenForMemberOf(ownerAccessToken)))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/api/v1/auth/members")
-                        .header(AUTHORIZATION, ownerAccessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(memberPayload))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.role").value("MEMBER"))
-                .andExpect(jsonPath("$.email").value("conviviente@ejemplo.es"));
+        mockMvc.perform(get("/api/v1/auth/invitations")
+                        .header(AUTHORIZATION, tokenForMemberOf(ownerAccessToken)))
+                .andExpect(status().isForbidden());
+    }
 
-        mockMvc.perform(get("/api/v1/auth/members").header(AUTHORIZATION, ownerAccessToken))
+    @Test
+    @Order(11)
+    @DisplayName("sin invitacion vigente, el titular ve que no hay ninguna")
+    void noPendingInvitationAtFirst() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/invitations").header(AUTHORIZATION, ownerAccessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pending").value(false))
+                .andExpect(jsonPath("$.householdFull").value(false));
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("un codigo inventado no dice nada mas que que no vale")
+    void unknownCodeIsRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/invitations/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"ZZZZ-ZZZZ-ZZZZ"}"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_INVITATION"));
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("generar un codigo nuevo invalida el anterior")
+    void issuingAgainRevokesThePrevious() throws Exception {
+        String primero = codigoDeInvitacion();
+        String segundo = codigoDeInvitacion();
+        assertThat(primero).isNotEqualTo(segundo);
+
+        mockMvc.perform(post("/api/v1/auth/invitations/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"%s"}""".formatted(primero)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_INVITATION"));
+
+        // El vigente si identifica el hogar y a quien invita, que es lo unico que revela.
+        mockMvc.perform(post("/api/v1/auth/invitations/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"%s"}""".formatted(segundo)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.householdName").value("Nuestra casa"))
+                .andExpect(jsonPath("$.invitedBy").value("Titular"));
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("el titular puede revocar la invitacion antes de que se use")
+    void ownerCanRevoke() throws Exception {
+        String codigo = codigoDeInvitacion();
+
+        mockMvc.perform(get("/api/v1/auth/invitations").header(AUTHORIZATION, ownerAccessToken))
+                .andExpect(jsonPath("$.pending").value(true))
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty());
+
+        mockMvc.perform(delete("/api/v1/auth/invitations").header(AUTHORIZATION, ownerAccessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/auth/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(altaCon(codigo, "revocada@ejemplo.es")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_INVITATION"));
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("con el codigo, la pareja se da de alta ella misma y entra")
+    void partnerJoinsWithTheCode() throws Exception {
+        String codigo = codigoDeInvitacion();
+
+        String respuesta = mockMvc.perform(post("/api/v1/auth/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(altaCon(codigo, "conviviente@ejemplo.es")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.user.role").value("MEMBER"))
+                .andReturn().getResponse().getContentAsString();
+
+        // La contrasena que ha elegido sirve para entrar: nadie mas la ha tocado.
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"conviviente@ejemplo.es","password":"otra-contrasena-larga-valida"}"""))
+                .andExpect(status().isOk());
+
+        JsonNode sesion = objectMapper.readTree(respuesta);
+        mockMvc.perform(get("/api/v1/auth/members")
+                        .header(AUTHORIZATION, "Bearer " + sesion.get("accessToken").asText()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    @Order(11)
-    @DisplayName("el hogar no admite un tercer miembro")
-    void householdIsLimitedToTwo() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/members")
-                        .header(AUTHORIZATION, ownerAccessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email":"tercero@ejemplo.es","displayName":"Tercero",\
-                                "password":"una-contrasena-larga-mas","monthlyNetIncome":1000}"""))
+    @Order(16)
+    @DisplayName("el codigo es de un solo uso")
+    void theCodeWorksOnlyOnce() throws Exception {
+        // El del test anterior ya se gasto; se recupera del hogar, que ahora esta lleno.
+        mockMvc.perform(get("/api/v1/auth/invitations").header(AUTHORIZATION, ownerAccessToken))
+                .andExpect(jsonPath("$.pending").value(false))
+                .andExpect(jsonPath("$.householdFull").value(true));
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("con el hogar lleno no se emiten mas invitaciones")
+    void fullHouseholdCannotInvite() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/invitations").header(AUTHORIZATION, ownerAccessToken))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("maximo 2 miembros")));
+                        org.hamcrest.Matchers.containsString("dos convivientes")));
+    }
+
+    /** Emite una invitacion y devuelve el codigo en claro, que solo llega aqui. */
+    private String codigoDeInvitacion() throws Exception {
+        String cuerpo = mockMvc.perform(post("/api/v1/auth/invitations")
+                        .header(AUTHORIZATION, ownerAccessToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").isNotEmpty())
+                .andExpect(jsonPath("$.joinUrl").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(cuerpo).get("code").asText();
+    }
+
+    private String altaCon(String codigo, String correo) {
+        return """
+                {"code":"%s","email":"%s","displayName":"Conviviente",\
+                "password":"otra-contrasena-larga-valida","monthlyNetIncome":1800.00}"""
+                .formatted(codigo, correo);
     }
 }

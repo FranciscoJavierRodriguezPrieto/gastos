@@ -5,7 +5,6 @@ import com.gastos.iam.application.AuthenticationResult;
 import com.gastos.iam.application.ManageHouseholdUseCase;
 import com.gastos.iam.application.RecoverAccessUseCase;
 import com.gastos.iam.domain.model.User;
-import com.gastos.iam.infrastructure.rest.dto.AddMemberRequest;
 import com.gastos.iam.infrastructure.rest.dto.BootstrapStatusResponse;
 import com.gastos.iam.infrastructure.rest.dto.ChangePasswordRequest;
 import com.gastos.iam.infrastructure.rest.dto.ForgotPasswordRequest;
@@ -33,7 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Los tres endpoints publicos son {@code /status}, {@code /register} y {@code /login},
  * mas {@code /refresh} y {@code /logout} que se autentican con el propio token de
- * refresco. Todo lo demas de la API exige un token de acceso valido.</p>
+ * refresco. Todo lo demas de la API exige un token de acceso valido. El alta del segundo
+ * conviviente tambien es publica, pero vive en {@link InvitationController}: lo que la
+ * autoriza es el codigo de invitacion, no una sesion.</p>
  *
  * <p>Los tokens se devuelven en el cuerpo y no en una cookie: la API es sin estado y el
  * cliente los envia en {@code Authorization}. Al no usar cookies, el vector de CSRF
@@ -138,21 +139,12 @@ public class AuthController {
                         "Usuario no encontrado"));
     }
 
+    /**
+     * Miembros del hogar. Solo de lectura: el segundo conviviente entra por invitacion
+     * ({@link InvitationController}), no dado de alta por el titular.
+     */
     @GetMapping("/members")
     public List<UserResponse> members(@CurrentUser AuthenticatedUser user) {
         return AuthRestMapper.toResponses(household.members(user.householdId()));
-    }
-
-    @PostMapping("/members")
-    public ResponseEntity<UserResponse> addMember(@CurrentUser AuthenticatedUser user,
-                                                  @Valid @RequestBody AddMemberRequest request) {
-        User member = household.addMember(
-                user,
-                new com.gastos.iam.domain.model.Email(request.email()),
-                request.displayName(),
-                request.password().toCharArray(),
-                Money.euros(request.monthlyNetIncome()));
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(AuthRestMapper.toResponse(member));
     }
 }

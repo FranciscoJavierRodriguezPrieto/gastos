@@ -13,6 +13,9 @@ import java.util.UUID;
  * @param monthlyEquivalent coste mensual prorrateado, calculado en el dominio para que
  *                          el cliente no tenga que replicar la formula
  * @param stableCommitment  si la banca lo computaria como deuda estable en el DTI
+ * @param fixedExpenseId    la plantilla de gasto fijo que lo genero, o null si se
+ *                          registro a mano. La pantalla lo usa para marcarlo y para
+ *                          poder llevar a editar el fijo del que sale
  */
 public record ExpenseResponse(UUID id,
                               String description,
@@ -23,5 +26,6 @@ public record ExpenseResponse(UUID id,
                               LocalDate incurredOn,
                               UUID accountId,
                               BigDecimal monthlyEquivalent,
-                              boolean stableCommitment) {
+                              boolean stableCommitment,
+                              UUID fixedExpenseId) {
 }

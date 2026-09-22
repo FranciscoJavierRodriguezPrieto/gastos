@@ -5,12 +5,17 @@ import {
 import {
   desplazarMes, euros, fecha, hoyIso, mesActual, nombreMes,
 } from '../ui/format.js';
+import { tarjetaGastosFijos } from './fijos.js';
 
 /**
  * Gastos del mes.
  *
  * El catálogo de categorías y periodicidades se pide al servidor en lugar de escribirlo
  * aquí: si algún día se añade una categoría, esta pantalla la muestra sola.
+ *
+ * Los gastos fijos viven en su propia tarjeta, pero sus gastos aparecen en el listado
+ * como uno más: **al pedir el mes, el servidor los genera si faltaban**. Por eso aquí no
+ * hay nada que disparar ni ningún orden que respetar; basta con pedir el mes.
  */
 
 let mesVisible = mesActual();
@@ -39,6 +44,9 @@ async function pintar(raiz) {
       totales(resumen),
       formularioAlta(raiz),
       listado(gastos, raiz),
+      // Al tocar un gasto fijo hay que repintar el mes: puede haber aparecido o
+      // desaparecido un movimiento, y los totales cambian.
+      tarjetaGastosFijos({ alCambiar: () => pintar(raiz) }),
     );
   } catch (e) {
     raiz.replaceChildren(
@@ -177,13 +185,25 @@ function listado(gastos, raiz) {
       'Anota el primero con el formulario de arriba.'));
   }
 
-  const filas = gastos.map((gasto) => el('li', { class: 'movimiento' }, [
+  return tarjeta('Movimientos', el('ul', { class: 'lista' },
+    gastos.map((gasto) => filaGasto(gasto, raiz))));
+}
+
+function filaGasto(gasto, raiz) {
+  const fila = el('li', { class: 'movimiento' }, [
     el('div', { class: 'movimiento__principal' }, [
       el('span', { class: 'movimiento__concepto', text: gasto.description }),
       el('span', { class: 'movimiento__meta' }, [
         gasto.categoryLabel,
         ' · ',
         fecha(gasto.incurredOn),
+        gasto.fixedExpenseId
+          ? el('span', {
+            class: 'etiqueta etiqueta--fijo',
+            text: 'fijo',
+            title: 'Viene de un gasto fijo. Editarlo aquí cambia sólo este mes.',
+          })
+          : null,
         gasto.stableCommitment
           ? el('span', {
             class: 'etiqueta etiqueta--compromiso',
@@ -194,16 +214,91 @@ function listado(gastos, raiz) {
       ]),
     ]),
     el('span', { class: 'movimiento__importe amount amount--negative', text: euros(gasto.amount) }),
-    el('button', {
-      class: 'boton boton--icono boton--peligro',
-      type: 'button',
-      'aria-label': `Borrar ${gasto.description}`,
-      onClick: async () => {
-        await api.delete(`/expenses/${gasto.id}`);
-        await pintar(raiz);
-      },
-    }, '×'),
-  ]));
+    el('div', { class: 'movimiento__acciones' }, [
+      el('button', {
+        class: 'boton boton--sutil',
+        type: 'button',
+        'aria-label': `Editar ${gasto.description}`,
+        // Editar en el sitio y no en un diálogo: es la forma de corregir el importe de
+        // un mes de un gasto fijo, que es lo que más se va a hacer aquí.
+        onClick: () => fila.replaceWith(formularioEdicion(gasto, raiz)),
+      }, 'Editar'),
+      el('button', {
+        class: 'boton boton--icono boton--peligro',
+        type: 'button',
+        'aria-label': `Borrar ${gasto.description}`,
+        onClick: async () => {
+          await api.delete(`/expenses/${gasto.id}`);
+          await pintar(raiz);
+        },
+      }, '×'),
+    ]),
+  ]);
 
-  return tarjeta('Movimientos', el('ul', { class: 'lista' }, filas));
+  return fila;
+}
+
+/**
+ * Edición de un gasto ya anotado.
+ *
+ * Si el gasto viene de una plantilla, **esto cambia sólo este mes**: la plantilla no se
+ * toca y el mes que viene vuelve a salir por su importe. Es justo lo que hace falta para
+ * la luz o el agua, que varían cada mes, y por eso se dice en la propia pantalla en vez
+ * de dejarlo a que se adivine.
+ */
+function formularioEdicion(gasto, raiz) {
+  const sufijo = gasto.id;
+  const descripcion = campo(`editDescripcion-${sufijo}`, 'Concepto', {
+    required: true, maxlength: 140, value: gasto.description,
+  });
+  const importe = campo(`editImporte-${sufijo}`, 'Importe (€)', {
+    type: 'number', required: true, min: '0.01', step: '0.01', inputmode: 'decimal',
+    value: gasto.amount,
+  });
+  const categoria = seleccion(`editCategoria-${sufijo}`, 'Categoría',
+    catalogo.categories.map((c) => ({ value: c.value, label: c.label })), gasto.category);
+  const periodicidad = seleccion(`editPeriodicidad-${sufijo}`, 'Periodicidad',
+    catalogo.recurrences.map((r) => ({ value: r.value, label: etiquetaPeriodicidad(r.value) })),
+    gasto.recurrence);
+  const dia = campo(`editDia-${sufijo}`, 'Fecha', {
+    type: 'date', required: true, value: gasto.incurredOn,
+  });
+
+  const aviso = el('div', { class: 'formulario__aviso' });
+
+  return el('li', { class: 'movimiento movimiento--editando' }, [
+    el('form', {
+      class: 'formulario formulario--linea',
+      novalidate: true,
+      onSubmit: async (evento) => {
+        evento.preventDefault();
+        aviso.replaceChildren();
+        try {
+          await api.put(`/expenses/${gasto.id}`, {
+            description: descripcion.control.value.trim(),
+            amount: Number(importe.control.value),
+            category: categoria.control.value,
+            recurrence: periodicidad.control.value,
+            incurredOn: dia.control.value,
+          });
+          await pintar(raiz);
+        } catch (e) {
+          aviso.replaceChildren(bloqueError(
+            e instanceof ApiError ? e.userMessage : 'No se ha podido guardar'));
+        }
+      },
+    }, [
+      descripcion, importe, categoria, periodicidad, dia,
+      el('button', { class: 'boton boton--principal', type: 'submit' }, 'Guardar'),
+      el('button', {
+        class: 'boton boton--sutil', type: 'button', onClick: () => pintar(raiz),
+      }, 'Cancelar'),
+      gasto.fixedExpenseId
+        ? el('p', { class: 'texto-apoyo', text:
+          'Viene de un gasto fijo. Esto cambia sólo este mes: la plantilla no se toca y '
+          + 'el mes que viene volverá a salir por su importe.' })
+        : null,
+      aviso,
+    ]),
+  ]);
 }

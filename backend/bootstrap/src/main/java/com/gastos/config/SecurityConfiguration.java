@@ -1,6 +1,7 @@
 package com.gastos.config;
 
 import com.gastos.iam.domain.port.PasswordHasher;
+import com.gastos.security.InvitationProperties;
 import com.gastos.security.JwtProperties;
 import com.gastos.security.WebAuthnProperties;
 import com.gastos.web.RateLimitFilter;
@@ -46,7 +47,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties({JwtProperties.class, RateLimitProperties.class,
-        WebAuthnProperties.class})
+        WebAuthnProperties.class, InvitationProperties.class})
 public class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -60,7 +61,12 @@ public class SecurityConfiguration {
             // Las dos del acceso con passkey, y no pueden ser de otro modo: quien entra
             // con passkey todavia no tiene token con el que autenticarse.
             "/api/v1/auth/passkeys/authentication/options",
-            "/api/v1/auth/passkeys/authentication"
+            "/api/v1/auth/passkeys/authentication",
+            // Las dos del alta por invitacion, por el mismo motivo: quien se esta dando
+            // de alta no tiene token. Lo que lo autoriza es el codigo, que es de un solo
+            // uso, caduca y lo puede revocar el titular.
+            "/api/v1/auth/invitations/check",
+            "/api/v1/auth/join"
     };
 
     @Bean

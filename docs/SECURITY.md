@@ -17,7 +17,7 @@ ramas posteriores, para que la deuda de seguridad sea visible en vez de implíci
 | **A04 Diseño inseguro** | Límite de dos miembros por hogar impuesto en el agregado; importes de gasto siempre positivos; descubierto prohibido salvo en tarjetas de crédito. | Implementado |
 | **A05 Configuración insegura** | Actuator reducido a `health` sin detalle; cabecera `Server` suprimida; mensajes y trazas de error nunca se devuelven al cliente. | Implementado en `application.yml` |
 | **A06 Componentes vulnerables** | Dependabot semanal sobre Maven, acciones de GitHub e imágenes Docker; `dependency-review-action` bloquea los PR que introducen una vulnerabilidad alta o crítica; BOM de Spring Boot para versiones coherentes. | Hecho |
-| **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto; **passkeys (WebAuthn)** con verificación de usuario obligatoria y retos de un solo uso. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md), [ADR-0007](adr/ADR-0007-passkeys-con-webauthn4j.md)) |
+| **A07 Fallos de identificación y autenticación** | JWT de 15 min con refresh rotatorio y detección de reutilización; BCrypt coste 12; sin registro abierto (el segundo conviviente entra con una invitación de un solo uso); **passkeys (WebAuthn)** con verificación de usuario obligatoria y retos de un solo uso. | Hecho ([ADR-0005](adr/ADR-0005-autenticacion-con-jwt.md), [ADR-0007](adr/ADR-0007-passkeys-con-webauthn4j.md)) |
 | **A08 Fallos de integridad** | Dependencias con versión fijada; imágenes base de Docker fijadas **por digest** en el `Dockerfile` y en el compose; acciones de GitHub por versión mayor, actualizadas por Dependabot; CI que compila, prueba y construye la imagen. | Hecho |
 | **A09 Fallos de registro y monitorización** | `DomainException` con mensajes de negocio, sin datos personales en las trazas; logs estructurados con identificador de correlación. | Parcial |
 | **A10 SSRF** | La única petición saliente es al relé SMTP, cuya dirección viene de la configuración y nunca del usuario. | No aplica |
@@ -53,7 +53,6 @@ cookie), lo que elimina el vector; si en algún momento se usaran cookies, serí
 
 Lo que **no** está hecho todavía, para que la deuda sea visible:
 
-- **Pantalla de alta del segundo conviviente**; hoy sólo por API.
 - **TLS**: la aplicación no termina TLS por sí misma; depende de la plataforma de
   despliegue. `fly.toml` fuerza HTTPS y Cloudflare Pages lo da de serie, pero mientras
   no haya un despliegue real esto está preparado, no verificado. Sin TLS, el token de

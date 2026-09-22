@@ -1,0 +1,91 @@
+# Despliegue de la API en Render.
+#
+# Render lee este fichero al conectar el repositorio como Blueprint y crea el servicio
+# con todo lo de aquí dentro. Va en la raíz porque es donde lo busca por defecto, y
+# porque `dockerContext: .` necesita ver `pom.xml` y `backend/`, que están aquí.
+#
+# La base de datos NO se declara aquí a propósito: la PostgreSQL gratuita de Render
+# caduca a los 30 días de crearla y se queda inaccesible. La de esta aplicación vive en
+# Neon, que es gratis y no caduca. Ver docs/DESPLIEGUE.md.
+
+services:
+  - type: web
+    name: gastos-api
+    runtime: docker
+    # Fráncfort es el centro europeo. Cruzar el Atlántico en cada consulta a Neon serían
+    # decenas de milisegundos por consulta, así que Neon va en eu-central-1.
+    region: frankfurt
+    plan: free
+    branch: main
+    dockerfilePath: ./infra/Dockerfile
+    dockerContext: .
+
+    # Despliegue a mano, nunca automático. Es la misma decisión que en el workflow de
+    # GitHub: hoy `main` sigue en el commit inicial y nada se publica solo. Cuando haya
+    # un despliegue funcionando y se decida que `main` es producción, esto pasa a true.
+    autoDeploy: false
+
+    # Render deja el servicio "vivo" cuando esto responde. Con 0,1 vCPU, arrancar Spring
+    # Boot y aplicar las migraciones de Flyway lleva más de un minuto: si el primer
+    # despliegue parece colgado, casi siempre sólo está arrancando.
+    healthCheckPath: /actuator/health
+
+    envVars:
+      # Render inyecta PORT y espera que el proceso escuche ahí. application.yml ya lo
+      # lee (`${PORT:8080}`), pero se deja explícito para que no dependa de un valor por
+      # defecto que alguien podría quitar.
+      - key: PORT
+        value: 8080
+
+      # Heap ajustado a los 512 MB de la instancia gratuita. Serial GC y compilación de
+      # nivel 1: con dos usuarios no hay concurrencia que justifique el coste en memoria
+      # de G1 ni el calentamiento del compilador C2, y ambas cosas acortan el arranque.
+      - key: JAVA_OPTS
+        value: -XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1
+
+      # Lo genera Render y no se ve nunca. Sin JWT_SECRET la aplicación no arranca, y es
+      # intencionado: una clave por defecto en el código es una clave pública.
+      #
+      # OJO: si algún día se recrea el servicio desde cero, este valor cambia y todas las
+      # sesiones abiertas dejan de valer. Es una molestia, no una pérdida de datos.
+      - key: JWT_SECRET
+        generateValue: true
+
+      # El resto se rellena en el panel. `sync: false` es justo eso: Render los pide al
+      # crear el servicio y no los guarda en el repositorio.
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+
+      # Correo (Brevo). MAIL_PASSWORD es la clave SMTP, no la del panel, y MAIL_FROM
+      # tiene que ser un remitente verificado o Brevo rechaza el envío.
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+      # Los cuatro que dependen del dominio del frontend. Se rellenan DESPUÉS de publicar
+      # la PWA, porque hasta entonces no se conoce su dominio (paso 4 de DESPLIEGUE.md).
+      #
+      # WEBAUTHN_RP_ID es el dominio del FRONTEND, sin esquema ni puerto. Poner el de la
+      # API hace que el navegador rechace las passkeys sin dar ninguna explicación.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: WEBAUTHN_RP_ID
+        sync: false
+      - key: WEBAUTHN_ORIGINS
+        sync: false
+      # APP_BASE_URL es a donde apuntan el enlace de restablecimiento de contraseña y el
+      # de invitación de la pareja. Con el valor de desarrollo, los dos llevan a
+      # localhost.
+      - key: APP_BASE_URL
+        sync: false

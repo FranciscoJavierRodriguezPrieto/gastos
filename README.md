@@ -8,21 +8,23 @@ Madrid.
 
 Aplicación funcionalmente completa: backend, **PWA instalable con las cuatro pantallas**
 —incluida la herramienta de hipoteca con deslizadores y catálogo de programas editable—,
-**restablecimiento de contraseña por correo** y **acceso con passkey (WebAuthn)**.
-**200 tests de backend y 31 de frontend y scripts.**
+**restablecimiento de contraseña por correo**, **acceso con passkey (WebAuthn)**,
+**invitación de la pareja con código de un solo uso** y **gastos fijos mensuales**.
+**267 tests de backend y 31 de frontend y scripts.**
 
 Verificado contra **PostgreSQL 16 real** y probado en el navegador, no sólo con tests.
 
 **Todavía no está desplegado.** Los ficheros y el procedimiento están listos
-([DESPLIEGUE.md](docs/DESPLIEGUE.md)); falta ejecutarlo contra cuentas reales de Fly.io,
-Neon y Cloudflare.
+([DESPLIEGUE.md](docs/DESPLIEGUE.md)); falta ejecutarlo contra cuentas reales de Neon,
+Render y Cloudflare ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)).
 
 El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
 ## Módulos funcionales
 
 1. **Resumen** — balance total, ingresos del hogar, KPI de superávit y distribución del gasto.
-2. **Gastos** — registro, categorización y prorrateo de gastos recurrentes.
+2. **Gastos** — registro, categorización y prorrateo de gastos recurrentes, más
+   **gastos fijos** que se anotan una vez y aparecen solos cada mes.
 3. **Mis Cuentas** — cuentas individuales y conjuntas, saldos y conciliación.
 4. **Herramientas de Hipoteca** — calculadora y análisis de viabilidad:
    - catálogo de programas de ayuda **editable desde la aplicación**, con tres modos de
@@ -42,7 +44,7 @@ El plan de ramas está en [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 | Seguridad | Spring Security, JWT HS256, BCrypt ([ADR-0005](docs/adr/ADR-0005-autenticacion-con-jwt.md)) |
 | Frontend | PWA sin framework ni compilación ([ADR-0006](docs/adr/ADR-0006-frontend-sin-framework.md)) |
 | Passkeys | WebAuthn4J tras un puerto ([ADR-0007](docs/adr/ADR-0007-passkeys-con-webauthn4j.md)) |
-| Despliegue | Fly.io + Neon + Cloudflare Pages ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
+| Despliegue | Render + Neon + Cloudflare Pages, coste 0 € ([ADR-0002](docs/adr/ADR-0002-plataforma-de-despliegue.md)) |
 
 ## Estructura
 
@@ -58,7 +60,8 @@ gastos/
 ├── frontend/            PWA: pantallas, cliente de la API y service worker
 ├── infra/               Dockerfile y docker-compose
 ├── scripts/             preparación del frontend para desplegar
-├── fly.toml             despliegue de la API en Fly.io
+├── render.yaml          despliegue de la API en Render
+├── fly.toml             alternativa de pago: la API en Fly.io
 └── docs/                arquitectura, ADR, flujo Git, seguridad, despliegue
 ```
 

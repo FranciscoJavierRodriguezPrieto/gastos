@@ -17,28 +17,39 @@ on:
       url_api:
         description: URL pública de la API (necesaria para el frontend)
         required: true
-        default: https://gastos-api.fly.dev
+        default: https://gastos-api.onrender.com
 
 permissions:
   contents: read
 
 jobs:
   api:
-    name: API en Fly.io
+    name: API en Render
     if: inputs.que == 'api' || inputs.que == 'ambos'
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      # Los secretos de la aplicación (JWT_SECRET, base de datos, correo) NO se pasan
-      # aquí: viven en `fly secrets`, se ponen una vez y no pasan por el registro de
-      # ejecuciones de GitHub. Ver docs/DESPLIEGUE.md.
-      - name: fly deploy
-        run: flyctl deploy --remote-only
+      # Render construye la imagen desde infra/Dockerfile y despliega el repositorio, asi
+      # que aqui no hay nada que construir ni que publicar: basta con dispararlo.
+      #
+      # `render.yaml` lleva autoDeploy: false para que el despliegue sea deliberado y no
+      # cada push. El servicio se crea la primera vez desde el Blueprint, en el panel
+      # (docs/DESPLIEGUE.md, paso 2.1); esto redespliega uno que ya existe.
+      #
+      # Los secretos de la aplicacion (JWT_SECRET, base de datos, correo) viven en Render
+      # y no aqui, asi que no pasan por el registro de ejecuciones de GitHub.
+      - name: Disparar el despliegue
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "Falta el secreto RENDER_DEPLOY_HOOK_URL." >&2
+            echo "Sale del panel de Render: servicio -> Settings -> Deploy Hook." >&2
+            exit 1
+          fi
+          # --fail para que un 4xx o 5xx tumbe el job en vez de dar por bueno un
+          # despliegue que nunca se ha disparado.
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK"
 
   frontend:
     name: PWA en Cloudflare Pages

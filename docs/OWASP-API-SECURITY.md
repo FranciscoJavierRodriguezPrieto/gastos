@@ -39,7 +39,10 @@ El riesgo número uno: pedir el recurso de otro cambiando un identificador.
 - **Mismo error para todo fallo de login**, y se calcula un hash de descarte cuando el
   correo no existe: ni el cuerpo ni el tiempo de respuesta delatan qué cuentas hay.
 - **Sin registro abierto**: el alta inicial sólo funciona mientras no exista ningún
-  hogar; después, sólo el `OWNER` da de alta al otro conviviente.
+  hogar; después sólo se entra con una **invitación del `OWNER`**: código aleatorio de
+  60 bits guardado como hash, de un solo uso, caducidad de siete días y revocable.
+  Emitir uno nuevo invalida el anterior, y desconocido, caducado, revocado o ya usado
+  responden lo mismo, para no convertir el alta en un comprobador de códigos.
 - **La clave de firma no tiene valor por defecto**: sin `JWT_SECRET` la aplicación no
   arranca.
 - **Restablecimiento por correo** con token opaco de un solo uso y 30 minutos de vida,

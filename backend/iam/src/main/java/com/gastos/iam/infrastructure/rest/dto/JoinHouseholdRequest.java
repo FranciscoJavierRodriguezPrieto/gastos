@@ -8,8 +8,17 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
-/** Alta del segundo conviviente. Solo la puede hacer el titular. */
-public record AddMemberRequest(
+/**
+ * Alta del segundo conviviente con el codigo de invitacion.
+ *
+ * <p>Los datos los pone quien entra, no quien invita. Esa es toda la diferencia con el
+ * alta directa a la que sustituye: la contrasena la elige su dueno y nadie mas la ve.</p>
+ */
+public record JoinHouseholdRequest(
+
+        @NotBlank(message = "El codigo es obligatorio")
+        @Size(max = 40, message = "El codigo no tiene un formato valido")
+        String code,
 
         @NotBlank(message = "El correo es obligatorio")
         @Email(message = "El correo no tiene un formato valido")

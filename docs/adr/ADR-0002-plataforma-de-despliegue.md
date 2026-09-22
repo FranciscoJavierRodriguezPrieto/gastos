@@ -10,6 +10,10 @@ Requisito explícito: desplegar sin coste y **sin usar Vercel ni Render**. Hay q
 colocar tres piezas: una API Java, una base de datos PostgreSQL y un frontend
 estático (PWA).
 
+> **Este requisito ha cambiado.** El veto a Render se levantó el 21/09/2026, al haber ya
+> cuenta abierta y horas de sobra en ella. El razonamiento está al final del documento.
+> Lo que se mantiene es el coste cero.
+
 ## Opciones evaluadas
 
 | Plataforma | Rol | Capa gratuita | Valoración |
@@ -23,6 +27,10 @@ estático (PWA).
 | **Netlify** | PWA | Alternativa equivalente | Reserva por si Pages da problemas. |
 
 ## Decisión
+
+> **Superada por la revisión del 21/09/2026 (2)**, al final de este documento: la API va
+> a Render, no a Fly.io. Se conserva lo de abajo porque explica por qué se descartó cada
+> alternativa, y ese razonamiento sigue siendo válido.
 
 Arquitectura de despliegue en tres piezas:
 
@@ -76,3 +84,85 @@ ya no son lo que dice la tabla:
 cero con Koyeb aceptando arranques lentos, o Oracle Cloud a cambio de mantener una
 máquina. El requisito original era coste cero, así que Fly.io deja de ser la opción
 principal por defecto.
+
+## Revisión del 21/09/2026 (2): se cierra la decisión con la API en Render
+
+El contexto de este ADR excluía Render. Esa exclusión **se levanta**, y conviene dejar
+escrito el camino porque la primera respuesta fue la contraria.
+
+### El argumento en contra, y por qué no se sostenía
+
+Render reparte **750 horas de instancia al mes por *workspace*, no por servicio**, y un
+mes tiene unas 730. De ahí salió la objeción: la bolsa da para *un* servicio despierto, y
+en esa cuenta ya hay dos cosas —una aplicación de entrenamientos y una web de boda—, así
+que meter una tercera parecía temerario. Agrava la pinta que **al agotar la bolsa Render
+suspende todos los servicios gratuitos del workspace**, no sólo el que se pasó.
+
+El fallo del razonamiento fue medir el riesgo por el número de servicios en lugar de por
+sus horas. **Un servicio sólo gasta mientras está despierto**, y se duerme a los 15
+minutos sin tráfico. Con los números reales de la cuenta:
+
+| Servicio | h/mes |
+|---|---|
+| Entrenamientos, mantenida despierta de 8:30 a 21:00 | ~390 |
+| **Esta aplicación**, dos personas abriéndola a ratos | **~15** |
+| Libre (web de boda y lo que venga) | ~345 |
+
+Esta aplicación cuesta **un 2% de la bolsa**. No es lo que la pone en riesgo: lo que
+consume las horas es el servicio que alguien mantiene despierto a propósito, y ése ya
+estaba ahí y cabe.
+
+### Lo que sí hay que vigilar
+
+El riesgo real no es el consumo de esta aplicación, es **la concentración**: tres
+servicios compartiendo una bolsa cuyo agotamiento los tumba a los tres a la vez. Lo que
+puede agotarla no es el uso normal, sino:
+
+- **un segundo servicio mantenido despierto** por un *ping* periódico —cada ventana de
+  8:30 a 21:00 son ~390 h, y dos no caben—;
+- **un rastreador** indexando una web pública, que la mantiene despierta sin que figure
+  en ninguna previsión.
+
+La mitigación es mirar *Billing → Usage* de vez en cuando. Y si un mes se acerca al
+límite, la aplicación que conviene mover es **ésta**: es la que menos gasta y la única
+que no tiene público al que dejar tirado. `fly.toml` sigue preparado para eso.
+
+### Lo que no cambia
+
+**La base de datos no va en Render.** Su PostgreSQL gratuito son 256 MB y **caduca a los
+30 días** de crearla. Neon es gratis, no caduca, y separa el ciclo de vida del dato del de
+la aplicación, que es lo que decía la decisión original.
+
+**Vercel no entra para la API**: no ejecuta contenedores de larga vida. Sólo serviría para
+la PWA, que ya está resuelta y gratis en Cloudflare Pages; moverla sería cambiar de sitio
+algo que funciona, y habría que portar el `_headers` con la CSP, que es la parte delicada.
+
+### Decisión final
+
+1. **PWA → Cloudflare Pages.** Sin cambios.
+2. **PostgreSQL → Neon.** Plan gratuito: 0,5 GB, 100 CU-hora al mes por proyecto,
+   escalado a cero a los 5 minutos. Para dos personas sobra de largo.
+3. **API → Render**, plan gratuito, Fráncfort, construida desde `infra/Dockerfile`. La
+   configuración vive en `render.yaml`, en la raíz.
+
+Render gana a Koyeb, que era la otra opción a coste cero, por tres cosas concretas: la
+cuenta ya existe, **construye desde el repositorio** en vez de exigir publicar la imagen
+en un registro, y el despliegue se declara en un fichero versionado en lugar de a mano en
+un panel. Koyeb tenía una ventaja —duerme a la hora en lugar de a los 15 minutos, así que
+se notan menos los arranques en frío—, pero no compensa las otras tres.
+
+### Lo que se acepta a cambio
+
+- **Arranque en frío de uno o dos minutos.** Render duerme el servicio a los 15 minutos
+  sin tráfico, y Spring Boot con 0,1 vCPU no se levanta deprisa; Neon suma lo suyo. Con
+  dos usuarios se puede vivir con ello, y el armazón de la PWA se sirve de la caché del
+  service worker, así que la aplicación *se ve* al instante aunque los datos tarden. Si un
+  día estorba, Fly.io por 1-4 € al mes lo quita.
+- **Bolsa de horas compartida**, con el castigo colectivo descrito arriba.
+- **Construcción lenta.** Un `mvn clean package` de seis módulos dentro del contenedor, en
+  una máquina de construcción modesta.
+
+**Estado: sigue en Propuesta.** Esto se ha decidido leyendo las condiciones publicadas y
+las horas reales de la cuenta, no desplegando. Lo que convierte este ADR en Aceptado es
+una primera ejecución real, que es lo que [DESPLIEGUE.md](../DESPLIEGUE.md) describe paso
+a paso.

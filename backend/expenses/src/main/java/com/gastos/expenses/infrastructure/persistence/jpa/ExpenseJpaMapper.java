@@ -3,6 +3,7 @@ package com.gastos.expenses.infrastructure.persistence.jpa;
 import com.gastos.expenses.domain.model.Expense;
 import com.gastos.expenses.domain.model.ExpenseCategory;
 import com.gastos.expenses.domain.model.ExpenseId;
+import com.gastos.expenses.domain.model.FixedExpenseId;
 import com.gastos.expenses.domain.model.Recurrence;
 import com.gastos.shared.domain.HouseholdId;
 import com.gastos.shared.domain.Money;
@@ -24,7 +25,8 @@ public final class ExpenseJpaMapper {
                 expense.category().name(),
                 expense.recurrence().name(),
                 expense.incurredOn(),
-                expense.accountId());
+                expense.accountId(),
+                expense.fixedExpenseId() == null ? null : expense.fixedExpenseId().value());
     }
 
     public static Expense toDomain(ExpenseEntity entity) {
@@ -37,6 +39,9 @@ public final class ExpenseJpaMapper {
                 ExpenseCategory.valueOf(entity.getCategory()),
                 Recurrence.valueOf(entity.getRecurrence()),
                 entity.getIncurredOn(),
-                entity.getAccountId());
+                entity.getAccountId(),
+                entity.getFixedExpenseId() == null
+                        ? null
+                        : new FixedExpenseId(entity.getFixedExpenseId()));
     }
 }
