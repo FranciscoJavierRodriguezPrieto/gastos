@@ -41,20 +41,62 @@ function aviso() {
   ]);
 }
 
-function listado(programas, repintar, alVolver) {
-  const instalar = el('button', {
-    class: 'boton boton--sutil', type: 'button',
-    onClick: async () => {
+/**
+ * Botón de instalar el catálogo de partida.
+ *
+ * Se deshabilita y cuenta lo que está pasando mientras dura la llamada. No es un adorno:
+ * la API duerme cuando no se usa y el primer despertar tarda casi un minuto, así que sin
+ * esto el botón parecía roto y se acababa pulsando cuatro veces.
+ *
+ * El fallo se enseña en el propio botón en lugar de tirar la pantalla: el resto del
+ * catálogo sigue siendo útil aunque esto no haya salido.
+ */
+function botonInstalar(repintar, { principal = false } = {}) {
+  const aviso = el('div', { class: 'formulario__aviso' });
+  const boton = el('button', {
+    class: `boton ${principal ? 'boton--principal' : 'boton--sutil'}`,
+    type: 'button',
+  }, principal ? 'Instalar Mi Primera Vivienda (Madrid)' : 'Instalar catálogo vigente');
+
+  const textoOriginal = boton.textContent;
+  boton.addEventListener('click', async () => {
+    aviso.replaceChildren();
+    boton.disabled = true;
+    boton.textContent = 'Instalando...';
+    try {
       await api.post('/mortgage/programs/reference-catalog', {});
       await repintar();
-    },
-  }, 'Instalar catálogo vigente');
+    } catch (e) {
+      aviso.replaceChildren(bloqueError(
+        e instanceof ApiError ? e.userMessage : 'No se ha podido instalar el catálogo'));
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+    }
+  });
 
+  return { boton, aviso };
+}
+
+function listado(programas, repintar, alVolver) {
   if (programas.length === 0) {
-    return tarjeta('Programas', vacio(
-      'Todavía no hay ningún programa',
-      'Sin programas, el simulador aplica la financiación estándar del 80%.'), instalar);
+    const { boton, aviso } = botonInstalar(repintar, { principal: true });
+    return tarjeta('Programas', [
+      vacio('Todavía no hay ningún programa',
+        'Sin programas, el simulador aplica la financiación estándar del 80%.'),
+      el('p', { class: 'texto-apoyo', text:
+        'El catálogo de partida son las cuatro vías de Mi Primera Vivienda de la Comunidad '
+        + 'de Madrid: hasta 40 años financia el 100%, hasta 45 el 95%, hasta 50 el 90%, y '
+        + 'las familias con hijos el 100% sin tope de edad. Todas exigen primera vivienda y '
+        + 'un precio máximo de 425.000 €.' }),
+      el('p', { class: 'texto-apoyo texto-apoyo--tenue', text:
+        'Se instalan como datos tuyos: luego puedes cambiarlos, desactivarlos o borrarlos. '
+        + 'Pulsar dos veces no los duplica.' }),
+      el('div', { class: 'invitacion__acciones' }, boton),
+      aviso,
+    ]);
   }
+
+  const { boton: instalar, aviso: avisoInstalar } = botonInstalar(repintar);
 
   const filas = programas.map((programa) => el('li', { class: 'programa' }, [
     el('div', { class: 'programa__datos' }, [
@@ -100,7 +142,9 @@ function listado(programas, repintar, alVolver) {
       'Volver al simulador'),
   ]);
 
-  return tarjeta('Programas', el('ul', { class: 'lista' }, filas), acciones);
+  // El aviso va en el cuerpo y no junto al botón: la cabecera de la tarjeta es una fila
+  // y un error metido ahí descoloca el título.
+  return tarjeta('Programas', [el('ul', { class: 'lista' }, filas), avisoInstalar], acciones);
 }
 
 function requisitos(programa) {
