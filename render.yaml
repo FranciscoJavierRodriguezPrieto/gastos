@@ -60,10 +60,21 @@ services:
       - key: SPRING_DATASOURCE_PASSWORD
         sync: false
 
-      # Correo (Brevo). MAIL_PASSWORD es la clave SMTP, no la del panel, y MAIL_FROM
-      # tiene que ser un remitente verificado o Brevo rechaza el envío.
+      # Correo, OPCIONAL: se puede desplegar sin él y añadirlo después.
+      #
+      # MAIL_HOST se rellena a mano y NO se fija aquí a propósito. Con él en blanco la
+      # aplicación detecta que no hay correo configurado y se limita a avisarlo por log
+      # (MailConfiguration lo comprueba explícitamente). Dejarlo apuntando a un servidor
+      # sin credenciales detrás sería peor que no ponerlo: la aplicación creería que
+      # puede enviar y fallaría con un error de conexión en cada intento.
+      #
+      # Con Gmail: smtp.gmail.com, usuario la dirección completa y como contraseña una
+      # CLAVE DE APLICACIÓN de 16 caracteres, no la del correo. Google rechaza la
+      # contraseña normal, y generar esa clave exige la verificación en dos pasos.
+      #
+      # Con Brevo: smtp-relay.brevo.com, y MAIL_FROM un remitente verificado.
       - key: MAIL_HOST
-        value: smtp-relay.brevo.com
+        sync: false
       - key: MAIL_PORT
         value: 587
       - key: MAIL_USERNAME

@@ -193,9 +193,34 @@ API lo avisa con un `WARN` en cada intento. Lo que **no** hay que hacer es dejar
 servidor de correo sin credenciales detrás: entonces la aplicación cree que puede enviar
 y falla al intentarlo.
 
-Cuando montes Brevo se rellenan las cuatro —`MAIL_HOST` es `smtp-relay.brevo.com`,
-`MAIL_PASSWORD` la **clave SMTP** y no la del panel, y `MAIL_FROM` un remitente
-**verificado**— y Render redespliega solo. Detalle en [OPERACION.md §3](OPERACION.md).
+### Activar el correo más tarde, con Gmail
+
+No hace falta contratar nada: vale una cuenta de Gmail. Lo que **no** vale es su
+contraseña normal —Google la rechaza para SMTP— así que hay que generar una *clave de
+aplicación*, y para eso la cuenta necesita la **verificación en dos pasos activada**.
+
+1. En la cuenta de Google, *Seguridad* → activa la **verificación en dos pasos** si no lo
+   está.
+2. Busca **Contraseñas de aplicaciones** y crea una. Sale una clave de **16 caracteres**
+   que sólo se enseña una vez.
+3. En Render, *Environment*, rellena:
+
+   | Variable | Valor |
+   |---|---|
+   | `MAIL_HOST` | `smtp.gmail.com` |
+   | `MAIL_PORT` | `587` |
+   | `MAIL_USERNAME` | la dirección completa, `loquesea@gmail.com` |
+   | `MAIL_PASSWORD` | la clave de aplicación de 16 caracteres |
+   | `MAIL_FROM` | la misma dirección |
+
+Render redespliega solo al guardar. Para comprobarlo, «he olvidado mi contraseña» y mirar
+que llega el correo.
+
+**Gmail limita a unos 500 envíos al día**, que para dos personas que restablecen la
+contraseña una vez cada mucho es de sobra. Brevo sigue siendo la alternativa si algún día
+hicieran falta más o un remitente con dominio propio; entonces `MAIL_HOST` es
+`smtp-relay.brevo.com`, `MAIL_PASSWORD` la **clave SMTP** (no la del panel) y `MAIL_FROM`
+un remitente **verificado**. Detalle en [OPERACION.md §3](OPERACION.md).
 
 Apunta la URL que sale (`https://gastos-api.onrender.com`).
 
