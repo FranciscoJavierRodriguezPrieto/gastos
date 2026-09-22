@@ -35,7 +35,7 @@
           los tests, porque usan las mismas migraciones contra H2 en modo PostgreSQL.
         -->
         <flyway.version>11.20.3</flyway.version>
-        <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
+        <webauthn4j.version>0.31.10.RELEASE</webauthn4j.version>
     </properties>
 
     <modules>
