@@ -31,8 +31,14 @@ public final class ReferenceAidPrograms {
     /** Articulo 4.b de la Orden: precio sin gastos ni tributos. */
     private static final Money PRECIO_MAXIMO = Money.euros(425_000);
 
+    /*
+     * Estas cadenas SE VEN EN PANTALLA: son el nombre y la nota de origen de cada
+     * programa, tal cual, en la lista y en el veredicto del simulador. Por eso van con
+     * tildes y con enes, al reves que los comentarios de este modulo. El proyecto compila
+     * en UTF-8 (project.build.sourceEncoding), asi que no hay nada que temer.
+     */
     private static final String FUENTE = "Orden 27/07/2026, BOCM 186 de 06/08/2026, en vigor el "
-            + "07/08/2026. Exige ademas 2 anos de residencia en Madrid y vivir en ella 5 anos.";
+            + "07/08/2026. Exige además 2 años de residencia en Madrid y vivir en ella 5 años.";
 
     private ReferenceAidPrograms() {
     }
@@ -41,11 +47,11 @@ public final class ReferenceAidPrograms {
         Guard.notNull(householdId, "householdId");
         return List.of(
                 // Articulo 2.a: "personas que no superen los cuarenta anos".
-                tramo(householdId, "Mi Primera Vivienda: hasta 40 anos", "100.00", 40),
+                tramo(householdId, "Mi Primera Vivienda: hasta 40 años", "100.00", 40),
                 // Articulo 2.b.
-                tramo(householdId, "Mi Primera Vivienda: hasta 45 anos", "95.00", 45),
+                tramo(householdId, "Mi Primera Vivienda: hasta 45 años", "95.00", 45),
                 // Articulo 2.c.
-                tramo(householdId, "Mi Primera Vivienda: hasta 50 anos", "90.00", 50),
+                tramo(householdId, "Mi Primera Vivienda: hasta 50 años", "90.00", 50),
                 // Articulo 2.a y 3.a: al 100% y "en estos casos sin limite de edad".
                 AidProgram.create(
                         householdId,
@@ -57,7 +63,7 @@ public final class ReferenceAidPrograms {
                         true,
                         true,
                         "Familias numerosas, monoparentales o con hijos menores a cargo, sin "
-                                + "limite de edad. " + FUENTE));
+                                + "límite de edad. " + FUENTE));
     }
 
     private static AidProgram tramo(HouseholdId householdId, String nombre, String ltv,

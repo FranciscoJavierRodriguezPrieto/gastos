@@ -121,9 +121,86 @@ body[data-estado='anonimo'] .app {
   border-top: 1px solid var(--color-border);
 }
 
-.lateral__usuario {
+/*
+ * Ficha del usuario.
+ *
+ * Antes era el nombre a pelo bajo una línea: no parecía pulsable y no parecía nada. Con
+ * su marco y su inicial pesa lo mismo que una pestaña, que es justo lo que es.
+ */
+.ficha {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.ficha:hover {
+  border-color: var(--color-primary-deep);
+}
+
+.ficha__inicial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--color-primary-deep);
+  color: var(--color-text-inverse);
   font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* En la barra inferior la inicial hace de icono, donde las demás pestañas llevan glifo. */
+.ficha__inicial--pequena {
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+}
+
+.ficha__datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Un nombre largo se corta con puntos suspensivos en vez de romper la columna. */
+.ficha__nombre {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ficha__pie {
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
+}
+
+/* Estando en la pantalla de cuenta, la ficha se marca como la pestaña activa. */
+.ficha.navegacion__enlace--activa {
+  background: var(--color-surface-muted);
+  border-color: var(--color-primary-deep);
+  color: var(--color-text);
+}
+
+.lateral__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lateral__salir {
+  flex: 1;
 }
 
 .inferior {
@@ -780,12 +857,34 @@ body[data-estado='anonimo'] .app {
     border-top: 1px solid var(--color-border);
   }
 
+  /*
+   * Cinco pestañas en 360 px de ancho: cada una se queda en unos 70. El texto tiene que
+   * poder encogerse sin empujar a las vecinas ni desbordar la barra.
+   */
   .inferior .navegacion__enlace {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     gap: 2px;
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-2) 2px;
     font-size: var(--text-xs);
+    text-align: center;
+  }
+
+  .inferior .navegacion__texto {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* El control completo de tema vive en «Tu cuenta», que en móvil ya es una pestaña. */
+  .opciones-tema {
+    gap: var(--space-2);
+  }
+
+  .opcion-tema {
+    flex: 1 1 8rem;
   }
 
   .formulario--linea {
@@ -823,13 +922,57 @@ body[data-estado='anonimo'] .app {
   }
 }
 
-/* Enlace a la pantalla de cuenta desde el pie de la navegación. */
-.lateral__usuario--enlace {
-  text-decoration: none;
-  padding: var(--space-2) 0;
+/* ------------------------------------------------------------------ tema */
+
+.opciones-tema {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
-.lateral__usuario--enlace:hover {
-  color: var(--color-primary-deep);
-  text-decoration: underline;
+/*
+ * El radio no se oculta con display:none ni con visibility: eso lo saca del orden de
+ * tabulación y lo deja inalcanzable con el teclado. Se deja donde está, transparente y
+ * del tamaño de un punto, y quien lo marca es la etiqueta que lo envuelve.
+ */
+.opcion-tema {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.opcion-tema:hover {
+  border-color: var(--color-primary-deep);
+}
+
+.opcion-tema input {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+}
+
+/* El foco del radio, que es invisible, se enseña en la etiqueta. */
+.opcion-tema:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary-deep);
+  outline-offset: 2px;
+}
+
+/* La elegida no se distingue sólo por el color: también engorda y cambia de fondo. */
+.opcion-tema:has(input:checked) {
+  background: var(--color-surface-muted);
+  border-color: var(--color-primary-deep);
+  font-weight: 600;
+}
+
+.opcion-tema__icono {
+  font-size: var(--text-lg);
+  line-height: 1;
 }

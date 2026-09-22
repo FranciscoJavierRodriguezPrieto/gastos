@@ -1,9 +1,14 @@
 /*
  * Sistema de color — Verde Salvia Cálido / Pistacho Suave.
  *
- * Tema claro de baja fatiga visual. Los tonos de verde nunca se usan como fondo de
- * texto pequeño: el contraste lo aporta siempre el antracita, que sobre las superficies
- * pálidas supera holgadamente el 4.5:1 exigido por WCAG 2.1 AA.
+ * Dos temas, claro y oscuro, de baja fatiga visual. Los tonos de verde nunca se usan
+ * como fondo de texto pequeño: el contraste lo aporta siempre el antracita (en claro) o
+ * el hueso (en oscuro), que sobre sus superficies superan holgadamente el 4.5:1 exigido
+ * por WCAG 2.1 AA.
+ *
+ * Cuál se aplica lo decide `data-tema` en <html>, que escribe src/ui/tema.js. Ahí está
+ * razonado por qué el atributo lleva el tema YA RESUELTO ('claro' u 'oscuro') y no la
+ * preferencia: así la paleta oscura se escribe una vez y no dos.
  */
 
 :root {
@@ -67,11 +72,66 @@
 }
 
 /*
- * El requisito es tema claro. Se declara el esquema explícitamente para que iOS no
- * aplique su inversión automática y desfigure la paleta.
+ * El esquema se declara explícitamente para que iOS no aplique su inversión automática
+ * y desfigure la paleta, y para que los controles nativos (menús desplegables, barras de
+ * desplazamiento, el calendario de los campos de fecha) acompañen al tema elegido.
  */
 :root {
   color-scheme: light;
+}
+
+/*
+ * Tema oscuro.
+ *
+ * No es la paleta clara invertida. Los verdes de marca sólo valen como TEXTO sobre
+ * superficies oscuras si se aclaran, y sólo valen como FONDO de botón si el texto que
+ * llevan encima se oscurece: por eso `--color-text-inverse` pasa a ser casi negro, al
+ * revés que en claro. Lo mismo con los colores semánticos: aquí son pasteles, porque
+ * sobre fondo oscuro un rojo saturado se lee mal y vibra.
+ *
+ * Hexadecimales sueltos, ninguno: quien pinte fuera de estos tokens se quedará con el
+ * color del tema claro incrustado y en oscuro se verá roto.
+ */
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+
+  /* Marca */
+  --color-primary: #3d4a31;          /* relleno oscuro: estados hover de botones suaves */
+  --color-primary-strong: #c2d3a8;   /* hover de la acción principal, rellenos de barra */
+  --color-primary-deep: #a9bd8e;     /* acción principal y acentos de texto: AA sobre oscuro */
+  --color-primary-soft: #2f3a26;     /* rellenos suaves, fondo del botón de passkey */
+
+  /* Superficies */
+  --color-surface: #1e231a;          /* tarjetas */
+  --color-surface-muted: #2a3124;    /* fondo de tarjeta destacada y de pestaña activa */
+  --color-background: #14180f;       /* lienzo de la aplicación */
+  --color-border: #38412f;
+
+  /* Texto */
+  --color-text: #e9ece3;             /* hueso: texto principal */
+  --color-text-secondary: #a9b19e;   /* etiquetas y textos de apoyo */
+  --color-text-inverse: #16190f;     /* lo que va ENCIMA de los verdes claros */
+
+  /* Semántica financiera */
+  --color-positive: #86c085;
+  --color-negative: #e2867c;
+  --color-warning: #dcae63;
+  --color-danger: #e08079;
+  --color-info: #8fb3cc;
+
+  /* Los mismos seis matices, subidos de luminosidad para que resalten sobre el oscuro */
+  --chart-1: #a8c188;
+  --chart-2: #d2e0ba;
+  --chart-3: #86a9a0;
+  --chart-4: #ddc590;
+  --chart-5: #b1a5bf;
+  --chart-6: #93b2cc;
+
+  /*
+   * En oscuro una sombra tenue no se ve: lo que separa la tarjeta del lienzo es su
+   * borde. La sombra se mantiene, más negra y más cerrada, sólo para dar profundidad.
+   */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 body {
