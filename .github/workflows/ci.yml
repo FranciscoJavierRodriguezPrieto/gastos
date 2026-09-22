@@ -64,7 +64,7 @@ jobs:
       # no sabe exportarla, y el paso siguiente fallaba con "build cache backends". Asi
       # estuvo el CI en rojo desde que se anadio este job sin que nadie lo viera.
       - name: Preparar buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Construir
         uses: docker/build-push-action@v6
