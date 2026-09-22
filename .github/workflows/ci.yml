@@ -31,7 +31,7 @@ jobs:
 
       # El frontend no tiene dependencias: basta el ejecutor de tests de Node.
       - name: Configurar Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
