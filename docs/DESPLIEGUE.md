@@ -52,32 +52,50 @@ deja una aplicación que carga pero no puede ni hacer login.
 
 ## 1. Base de datos en Neon
 
-1. Crea un proyecto en [neon.tech](https://neon.tech) con una base de datos llamada
-   `gastos`.
-2. Copia la cadena de conexión. Viene en formato `postgresql://…`, y Java necesita
-   **JDBC**, así que hay que partirla:
+> **Ignora el asistente de Neon si te ofrece `neon login`, `neon.ts`, `neon deploy` o
+> instalar su MCP.** Todo eso es su onboarding para proyectos JavaScript. Esta aplicación
+> es Java y migra con Flyway: de Neon sólo hace falta **la cadena de conexión**.
+
+1. Crea un proyecto en [neon.tech](https://neon.tech). **La región se elige al crearlo y
+   después no se puede cambiar**: `eu-central-1` (Fráncfort), la misma que el servicio de
+   Render. Cada salto entre continentes son decenas de milisegundos en *cada* consulta, y
+   aquí se cruzan varias por pantalla.
+
+2. **No hace falta crear ninguna base de datos.** Neon trae una llamada `neondb` y sirve
+   perfectamente; lo único que importa es usar el nombre que aparezca en la cadena.
+
+3. En *Connect to your database*, copia la cadena. **Elige la conexión directa, no la del
+   pooler** (la del pooler lleva `-pooler` en el host). El pooler existe para aplicaciones
+   que abren y cierran conexiones sin parar; ésta mantiene su propio grupo de cinco y
+   ejecuta las migraciones de Flyway al arrancar, que es justo el tipo de trabajo con el
+   que un pooler en modo transacción da sorpresas.
+
+4. Java necesita **JDBC**, así que hay que partirla:
 
    ```
-   postgresql://usuario:contrasena@ep-algo.eu-central-1.aws.neon.tech/gastos?sslmode=require
+   postgresql://usuario:contrasena@ep-algo.eu-central-1.aws.neon.tech/neondb?sslmode=require
    ```
 
    se convierte en:
 
    ```
-   SPRING_DATASOURCE_URL      jdbc:postgresql://ep-algo.eu-central-1.aws.neon.tech/gastos?sslmode=require
+   SPRING_DATASOURCE_URL      jdbc:postgresql://ep-algo.eu-central-1.aws.neon.tech/neondb?sslmode=require
    SPRING_DATASOURCE_USERNAME usuario
    SPRING_DATASOURCE_PASSWORD contrasena
    ```
 
+   Fíjate en las tres diferencias: delante va `jdbc:`, el usuario y la contraseña **salen
+   de la URL** y pasan a sus propias variables, y el resto se queda igual.
+
    **`sslmode=require` no es opcional**: sin él la conexión iría en claro por internet.
 
-3. Elige **`eu-central-1` (Fráncfort)**, la misma región que el servicio de Render.
-   Cada salto entre continentes son decenas de milisegundos en *cada* consulta.
+> **Esa cadena lleva la contraseña de la base de datos dentro.** Va directa del panel de
+> Neon al de Render y a ningún otro sitio: ni a un fichero del repositorio, ni a un chat,
+> ni a un correo. Si alguna vez se escapa, en Neon se puede restablecer la contraseña del
+> rol sin rehacer el proyecto.
 
 No hace falta crear ninguna tabla: **Flyway migra al arrancar**. La primera vez aplicará
-las seis migraciones de golpe.
-
----
+las siete migraciones de golpe, y en los logs de Render se ve una línea por cada una.
 
 ## 2. API en Render
 
