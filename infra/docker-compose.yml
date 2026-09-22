@@ -1,0 +1,76 @@
+# Entorno local completo: API + PostgreSQL.
+#
+#   docker compose -f infra/docker-compose.yml up --build
+#
+# Para levantar solo la base de datos y ejecutar la API desde el IDE o desde el JAR:
+#
+#   docker compose -f infra/docker-compose.yml up -d db
+#
+# Las credenciales de este fichero son SOLO para desarrollo local. En cualquier entorno
+# accesible desde red se inyectan por variable de entorno y nunca se versionan.
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:3c5c8892d184f738f4fe282d14ddaa613a38f00f4189d2d94725ebe6f2909ddb
+    container_name: gastos-db
+    environment:
+      POSTGRES_DB: gastos
+      POSTGRES_USER: gastos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+    ports:
+      - "127.0.0.1:5432:5432"   # solo loopback: la BD no se expone a la red local
+    volumes:
+      - gastos-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gastos -d gastos"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: gastos-api
+    # Espera a que la base de datos acepte conexiones: Flyway migra al arrancar y sin
+    # esto la API moriria en el primer intento.
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gastos
+      SPRING_DATASOURCE_USERNAME: gastos
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-gastos_local_dev}
+      # SOLO desarrollo local. En cualquier entorno accesible desde red, genera una
+      # clave aleatoria y pasala por entorno: openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:-clave-de-desarrollo-local-de-mas-de-32-caracteres}
+      # Ambos origenes: el navegador trata localhost y 127.0.0.1 como distintos.
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  # Frontend: ficheros estaticos tal cual, sin paso de compilacion (ADR-0006). En
+  # produccion esto lo sirve Cloudflare Pages; aqui basta un nginx.
+  web:
+    image: nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8
+    container_name: gastos-web
+    depends_on:
+      - api
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro
+      # Sin esta configuracion nginx no manda Cache-Control y el navegador se queda con
+      # la version anterior de cualquier fichero que edites.
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Las cabeceras de seguridad van aparte para poder repetirlas en cada
+      # location: nginx no las hereda alli donde ya hay otro add_header. Fuera de
+      # conf.d, que nginx incluye entero por su cuenta y las aplicaria tambien al
+      # nivel http sin que nadie lo hubiera pedido.
+      - ./cabeceras-seguridad.conf:/etc/nginx/snippets/cabeceras-seguridad.conf:ro
+    ports:
+      # 5173 porque es el origen que la API trae autorizado por defecto en CORS.
+      - "127.0.0.1:5173:80"
+    restart: unless-stopped
+
+volumes:
+  gastos-db-data:

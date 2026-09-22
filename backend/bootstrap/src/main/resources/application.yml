@@ -1,0 +1,192 @@
+spring:
+  application:
+    name: gastos
+  main:
+    banner-mode: off
+
+  datasource:
+    # Sin valores por defecto embebidos: la conexion se inyecta por entorno y las
+    # credenciales nunca viven en el repositorio.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/gastos}
+    username: ${SPRING_DATASOURCE_USERNAME:gastos}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      # Una instancia gratuita no aguanta un pool grande, y con dos usuarios no hace falta.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 10000
+
+  jpa:
+    # El esquema lo gobierna Flyway; Hibernate solo comprueba que las entidades encajan.
+    # Si alguna vez divergen, la aplicacion no arranca, que es exactamente lo que se
+    # quiere: mejor un fallo al desplegar que una columna silenciosamente ignorada.
+    hibernate:
+      ddl-auto: validate
+    # Cerrar la sesion al salir del servicio: sin esto, una entidad perezosa se cargaria
+    # al serializar la respuesta y las consultas aparecerian fuera de toda transaccion.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  # Rele SMTP para el enlace de restablecimiento. Sin MAIL_HOST la aplicacion arranca
+  # igual, pero no envia nada y lo avisa por log en cada intento.
+  # Con Brevo: host smtp-relay.brevo.com, puerto 587, usuario el de tu cuenta y como
+  # contrasena la clave SMTP (no la del panel).
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Fallar si alguien edita una migracion ya aplicada, en vez de callar.
+    validate-on-migrate: true
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      # Un campo desconocido en el cuerpo es un error, no algo que ignorar en silencio:
+      # avisa de contratos desincronizados y cierra el mass assignment (OWASP API6).
+      fail-on-unknown-properties: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${PORT:8080}
+  # No revelar el servidor de aplicaciones en las cabeceras (CCN-STIC-812: minimizar
+  # la informacion que se ofrece a un atacante).
+  server-header:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  shutdown: graceful
+  # Limites de consumo de recursos (OWASP API4): ningun cuerpo de esta API se acerca
+  # siquiera a estos tamanos.
+  max-http-request-header-size: 8KB
+  tomcat:
+    max-http-form-post-size: 256KB
+    max-swallow-size: 256KB
+    connection-timeout: 10s
+    threads:
+      max: 50
+
+# Superficie de gestion reducida al minimo: solo health y sin detalle para anonimos.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    # Sin SMTP configurado el indicador de correo dejaria la aplicacion en 503, y no es
+    # cierto: la aplicacion sirve perfectamente sin poder enviar correos. Lo unico que
+    # no funcionaria es el restablecimiento, y de eso ya avisa LoggingEmailSender.
+    mail:
+      enabled: false
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.gastos: INFO
+
+gastos:
+  security:
+    jwt:
+      # Sin valor por defecto: si falta JWT_SECRET la aplicacion no arranca, y es
+      # intencionado. Una clave por defecto en el codigo es una clave publica, y quien la
+      # conozca puede fabricarse un token para cualquier hogar.
+      secret: ${JWT_SECRET:}
+      issuer: gastos
+      # Corta porque un token de acceso no se puede revocar: si se filtra, el dano dura
+      # lo que le quede de vida.
+      access-token-ttl: 15m
+      refresh-token-ttl: 30d
+
+  # Origenes autorizados del frontend. Vacio significa que no se admite ninguno.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+  password-reset:
+    # Corta a proposito: el enlace viaja por un canal que no controlamos.
+    ttl: 30m
+    # A donde apunta el enlace del correo. Debe ser la URL publica del frontend.
+    base-url: ${APP_BASE_URL:http://localhost:5173}
+    # En Brevo tiene que ser un remitente verificado o el envio se rechaza.
+    from: ${MAIL_FROM:gastos@localhost}
+
+  invitation:
+    # Dias, no minutos como el enlace de restablecimiento: entre que el titular manda el
+    # codigo y la otra persona se sienta a rellenar sus datos puede pasar una semana.
+    ttl: 7d
+    # Misma URL publica del frontend que usa el correo de restablecimiento: el enlace de
+    # invitacion lleva a la pantalla de alta con el codigo ya puesto.
+    base-url: ${APP_BASE_URL:http://localhost:5173}
+
+  webauthn:
+    # OJO: es el dominio del FRONTEND, no el de la API. Si la aplicacion se sirve en
+    # gastos.example.com, aqui va eso (o example.com). Poner el dominio de la API hace
+    # que el navegador rechace la ceremonia sin dar explicaciones.
+    rp-id: ${WEBAUTHN_RP_ID:localhost}
+    rp-name: Gastos
+    # Direcciones completas, con esquema y puerto. Fuera de localhost el navegador exige
+    # HTTPS, asi que en produccion siempre empiezan por https://.
+    origins: ${WEBAUTHN_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5173}}
+    # Cinco minutos: una passkey puede estar en otro aparato, y entre leer el codigo QR,
+    # desbloquear el movil y confirmar se va facilmente un minuto.
+    ttl: 5m
+
+  rate-limit:
+    enabled: true
+    max-requests: 120
+    window-seconds: 60
+
+  mortgage:
+    # Baremos del simulador. Cambian por normativa, no por codigo: tocarlos aqui cambia
+    # el calculo sin recompilar (los lee MortgageProperties).
+    #
+    # Los programas de ayuda (Mi Primera Vivienda y demas) NO van aqui: son datos que el
+    # hogar edita desde la aplicacion, en Hipoteca > Programas de ayuda (ADR-0004).
+    purchase-costs:
+      # ITP de la Comunidad de Madrid, vivienda de segunda mano. Revisado en 09/2026
+      # contra comunidad.madrid (Transmisiones Patrimoniales Onerosas).
+      transfer-tax-rate: 6.00
+      # Bonificacion del 10% de la cuota para vivienda habitual de hasta 250.000 EUR,
+      # sin limite de edad: 6% -> 5,4% efectivo.
+      habitual-residence-rebate: 10.00
+      habitual-residence-rebate-limit: 250000
+      # Tipo reducido para familia numerosa en vivienda habitual. Incompatible con la
+      # bonificacion anterior; el simulador aplica el que sale mas barato.
+      large-family-rate: 4.00
+      # Notaria, registro y gestoria. Estimacion, no norma: varia con el precio y con la
+      # notaria. Conviene pedir provision de fondos antes de firmar.
+      ancillary-costs-rate: 4.00
+    # Criterio bancario. Ningun limite de DTI es legal en Espana: son las cifras con las
+    # que suelen trabajar las entidades.
+    lending:
+      optimal-housing-dti: 25.00
+      max-housing-dti: 30.00
+      optimal-total-dti: 35.00
+      max-total-dti: 40.00
+      min-residual-income: 1000
+      standard-loan-to-value: 80.00

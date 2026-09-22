@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar, probar y verificar arquitectura
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      # verify ejecuta los tests unitarios, los de integración y las reglas de ArchUnit.
+      # Si una frontera del hexágono se rompe, el build falla aquí y no en revisión.
+      - name: mvn verify
+        run: mvn -B clean verify
+
+      # El frontend no tiene dependencias: basta el ejecutor de tests de Node.
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests del frontend
+        run: node --test "frontend/test/*.test.js"
+
+      # El script de despliegue también se prueba: si falla a medias, publica algo que
+      # parece bien y sólo se rompe en el navegador de quien lo use.
+      - name: Tests de los scripts
+        run: node --test "scripts/test/*.test.js"
+
+      - name: Publicar informes de test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/*.txt'
+          retention-days: 7
+
+  imagen:
+    name: Construir la imagen de la API
+    runs-on: ubuntu-latest
+
+    # Hasta ahora nada comprobaba el Dockerfile: un cambio que lo rompiera se descubría
+    # al desplegar. Se construye, pero no se publica: eso es cosa del despliegue.
+    steps:
+      - uses: actions/checkout@v4
+
+      # Imprescindible para la cache de tipo gha: el driver de Docker que trae el runner
+      # no sabe exportarla, y el paso siguiente fallaba con "build cache backends". Asi
+      # estuvo el CI en rojo desde que se anadio este job sin que nadie lo viera.
+      - name: Preparar buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/Dockerfile
+          push: false
+          tags: gastos-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  dependencias:
+    name: Revisar dependencias nuevas
+    runs-on: ubuntu-latest
+    # Sólo tiene sentido en un PR: compara lo que entra contra la rama destino. El
+    # inventario completo lo vigila Dependabot, no esto.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Una vulnerabilidad alta o crítica que entra con una dependencia nueva para
+          # el PR. Las que ya están dentro las gestiona Dependabot con su propio ritmo.
+          fail-on-severity: high
