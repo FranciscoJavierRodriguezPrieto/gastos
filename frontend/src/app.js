@@ -1,6 +1,7 @@
 import { api } from './api/client.js';
 import { session } from './api/session.js';
 import { el } from './ui/dom.js';
+import { alCambiarTema, alternarTema, iniciarTema, temaEfectivo } from './ui/tema.js';
 import { vistaCuentas } from './views/accounts.js';
 import { vistaGastos } from './views/expenses.js';
 import { vistaHipoteca } from './views/mortgage.js';
@@ -93,9 +94,9 @@ async function pintarSeccion(contenido = document.getElementById('contenido')) {
     return;
   }
   if (window.location.hash.replace(/^#\/?/, '') === 'cuenta') {
-    marcarActiva(null);
+    marcarActiva('cuenta');
     document.title = 'Tu cuenta · Gastos';
-    await vistaCuenta(contenido);
+    await vistaCuenta(contenido, { alSalir: salir });
     return;
   }
 
@@ -137,21 +138,93 @@ function barraLateral() {
     ]),
     el('div', { class: 'lateral__enlaces' }, enlaces('lateral')),
     el('div', { class: 'lateral__pie' }, [
-      el('a', {
-        class: 'lateral__usuario lateral__usuario--enlace',
-        href: '#/cuenta',
-        text: session.user?.displayName ?? 'Tu cuenta',
-      }),
-      el('button', {
-        class: 'boton boton--sutil', type: 'button', onClick: salir,
-      }, 'Cerrar sesión'),
+      fichaUsuario(),
+      el('div', { class: 'lateral__acciones' }, [
+        botonDeTema(),
+        el('button', {
+          class: 'boton boton--sutil lateral__salir', type: 'button', onClick: salir,
+        }, 'Cerrar sesión'),
+      ]),
     ]),
   ]);
 }
 
-/** En móvil la navegación va abajo: es donde llega el pulgar. */
+/** Primera letra del nombre, en mayúscula, para el círculo del avatar. */
+function inicialDe(nombre) {
+  const limpio = nombre.trim();
+  return limpio ? limpio[0].toUpperCase() : '·';
+}
+
+/**
+ * Ficha del usuario en el pie de la navegación.
+ *
+ * Era un nombre suelto colgando bajo una línea, sin nada que dijera que se podía pulsar.
+ * Enmarcarlo y darle una inicial lo convierte en lo que de verdad es: el acceso a tu
+ * cuenta, con el mismo peso visual que una pestaña.
+ */
+function fichaUsuario() {
+  const nombre = session.user?.displayName ?? 'Tu cuenta';
+  return el('a', {
+    class: 'ficha',
+    href: '#/cuenta',
+    dataset: { ruta: 'cuenta' },
+    'aria-label': `Tu cuenta: ${nombre}`,
+  }, [
+    el('span', { class: 'ficha__inicial', 'aria-hidden': 'true', text: inicialDe(nombre) }),
+    el('span', { class: 'ficha__datos' }, [
+      el('span', { class: 'ficha__nombre', text: nombre }),
+      el('span', { class: 'ficha__pie', text: 'Ver tu cuenta' }),
+    ]),
+  ]);
+}
+
+/**
+ * Interruptor rápido de tema.
+ *
+ * El control completo (claro / oscuro / el del sistema) está en la pantalla de cuenta;
+ * esto es el atajo para el gesto habitual, que es cambiar al otro. El icono enseña a
+ * dónde se va, no dónde se está: con el tema oscuro puesto se ve un sol.
+ */
+function botonDeTema() {
+  const boton = el('button', {
+    class: 'boton boton--icono', type: 'button', onClick: alternarTema,
+  });
+
+  const repintar = () => {
+    const oscuro = temaEfectivo() === 'oscuro';
+    boton.textContent = oscuro ? '☀' : '☾';
+    const etiqueta = oscuro ? 'Cambiar al modo claro' : 'Cambiar al modo oscuro';
+    boton.setAttribute('aria-label', etiqueta);
+    boton.setAttribute('title', etiqueta);
+  };
+
+  repintar();
+  alCambiarTema(boton, repintar);
+  return boton;
+}
+
+/**
+ * En móvil la navegación va abajo: es donde llega el pulgar.
+ *
+ * Lleva además la entrada a la cuenta, que en móvil no tenía ninguna otra puerta: la
+ * barra lateral está oculta, así que desde el teléfono no había forma de invitar a
+ * nadie, cambiar la contraseña ni cerrar sesión.
+ */
 function barraInferior() {
-  return el('nav', { class: 'inferior', 'aria-label': 'Secciones' }, enlaces('inferior'));
+  const nombre = session.user?.displayName ?? 'Tu cuenta';
+  const cuenta = el('a', {
+    class: 'inferior__enlace navegacion__enlace',
+    href: '#/cuenta',
+    dataset: { ruta: 'cuenta' },
+    'aria-label': `Tu cuenta: ${nombre}`,
+  }, [
+    el('span', { class: 'navegacion__icono ficha__inicial ficha__inicial--pequena',
+      'aria-hidden': 'true', text: inicialDe(nombre) }),
+    el('span', { class: 'navegacion__texto', text: 'Tú' }),
+  ]);
+
+  return el('nav', { class: 'inferior', 'aria-label': 'Secciones' },
+    [...enlaces('inferior'), cuenta]);
 }
 
 async function entrar() {
@@ -206,6 +279,10 @@ session.onChange((estado) => {
 });
 
 async function arrancar() {
+  // tema-inicial.js ya ha pintado con el tema correcto; esto engancha el seguimiento del
+  // modo del sistema y pone la barra del navegador a juego.
+  iniciarTema();
+
   // Quien llega desde el enlace del correo o desde el de invitacion no debe pasar por el
   // login, aunque tenga una sesion vieja guardada en este navegador.
   const publicaAlArrancar = rutaPublica()?.nombre;

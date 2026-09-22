@@ -15,18 +15,20 @@
  * sin forma evidente de salir de ahí. Los iconos sí van de caché, porque no cambian.
  */
 
-const VERSION = 'gastos-v6';
+const VERSION = 'gastos-v7';
 
 const ARMAZON = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/config.js',
+  '/tema-inicial.js',
   '/src/app.js',
   '/src/api/client.js',
   '/src/api/session.js',
   '/src/api/webauthn.js',
   '/src/ui/dom.js',
+  '/src/ui/tema.js',
   '/src/ui/format.js',
   '/src/ui/deslizador.js',
   '/src/views/accounts.js',
