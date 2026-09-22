@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configurar JDK 21
         uses: actions/setup-java@v4
@@ -58,7 +58,7 @@ jobs:
     # Hasta ahora nada comprobaba el Dockerfile: un cambio que lo rompiera se descubría
     # al desplegar. Se construye, pero no se publica: eso es cosa del despliegue.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Imprescindible para la cache de tipo gha: el driver de Docker que trae el runner
       # no sabe exportarla, y el paso siguiente fallaba con "build cache backends". Asi
@@ -84,7 +84,7 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Dependency review
         uses: actions/dependency-review-action@v4
