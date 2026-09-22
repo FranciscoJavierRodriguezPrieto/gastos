@@ -145,11 +145,20 @@ que hay que rellenar a mano:
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://…/neondb?sslmode=require` (paso 1) |
 | `SPRING_DATASOURCE_USERNAME` | el de Neon |
 | `SPRING_DATASOURCE_PASSWORD` | el de Neon |
-| `MAIL_USERNAME` | el de Brevo |
-| `MAIL_PASSWORD` | la **clave SMTP** de Brevo, no la del panel |
-| `MAIL_FROM` | un remitente **verificado** en Brevo, o rechaza el envío |
+| `MAIL_HOST` | **déjalo en blanco** si aún no tienes Brevo |
+| `MAIL_USERNAME` | en blanco |
+| `MAIL_PASSWORD` | en blanco |
+| `MAIL_FROM` | en blanco |
 
-Detalle del correo en [OPERACION.md §3](OPERACION.md).
+**El correo es opcional y se puede añadir después.** Con `MAIL_HOST` en blanco la
+aplicación arranca igual; lo único que no funciona es «he olvidado mi contraseña», y la
+API lo avisa con un `WARN` en cada intento. Lo que **no** hay que hacer es dejar puesto el
+servidor de correo sin credenciales detrás: entonces la aplicación cree que puede enviar
+y falla al intentarlo.
+
+Cuando montes Brevo se rellenan las cuatro —`MAIL_HOST` es `smtp-relay.brevo.com`,
+`MAIL_PASSWORD` la **clave SMTP** y no la del panel, y `MAIL_FROM` un remitente
+**verificado**— y Render redespliega solo. Detalle en [OPERACION.md §3](OPERACION.md).
 
 Apunta la URL que sale (`https://gastos-api.onrender.com`).
 
