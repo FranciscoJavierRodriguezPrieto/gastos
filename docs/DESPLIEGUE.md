@@ -124,6 +124,43 @@ Dockerfile, health check y la lista de variables.
 `JWT_SECRET` no lo pide: `render.yaml` le dice que lo genere él. Nadie llega a verlo, que
 es lo suyo.
 
+#### Si no encuentras la opción de Blueprint
+
+Está en el botón `New +`, arriba a la derecha. Si no aparece, **da igual**: el Blueprint
+sólo ahorra teclear. El mismo servicio se crea con `New +` → *Web Service* rellenando a
+mano lo que el fichero declara:
+
+| Campo | Valor |
+|---|---|
+| Branch | `main` |
+| Language / Runtime | **Docker** |
+| Name | `gastos-api` |
+| Region | **Frankfurt (EU Central)** |
+| Instance Type | **Free** |
+| Dockerfile Path | `./infra/Dockerfile` |
+| Docker Build Context Directory | `.` |
+| Health Check Path | `/actuator/health` |
+
+Los dos últimos suelen estar detrás del desplegable *Advanced*.
+
+Y seis variables de entorno, que son todas las que la aplicación necesita para arrancar:
+
+| Nombre | Valor |
+|---|---|
+| `PORT` | `8080` |
+| `JAVA_OPTS` | `-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1` |
+| `JWT_SECRET` | *Generate*, o **30+ caracteres al azar**: por debajo de 32 la aplicación no arranca y lo dice |
+| `SPRING_DATASOURCE_URL` | del paso 1 |
+| `SPRING_DATASOURCE_USERNAME` | del paso 1 |
+| `SPRING_DATASOURCE_PASSWORD` | del paso 1 |
+
+Las de correo y las del dominio del frontend **ni se crean**: la aplicación arranca sin
+ellas y se añaden cuando hagan falta.
+
+Creándolo así, `render.yaml` queda de adorno. No pasa nada, pero conviene saberlo: a
+partir de ese momento la configuración de verdad está en el panel y no en el repositorio,
+así que un cambio en el fichero ya no llega solo.
+
 ### 2.2 Qué esperar del primer despliegue
 
 Dos cosas que asustan si no se avisan:
