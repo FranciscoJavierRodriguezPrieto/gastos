@@ -10,6 +10,7 @@ exactamente los ficheros que hay en este directorio. El porqué está en
 frontend/
 ├── index.html          armazón de la página
 ├── config.js           dirección de la API, leída en tiempo de ejecución
+├── tema-inicial.js     aplica el tema guardado antes de la primera pintura
 ├── manifest.webmanifest
 ├── sw.js               service worker: arranque sin conexión
 ├── _headers            cabeceras para Cloudflare Pages (CSP incluida)
@@ -88,6 +89,18 @@ nunca: un saldo desactualizado que parece actual es peor que no ver nada.
 
 **Nunca se usa `innerHTML` con datos.** Todo el texto entra por `textContent`. Un
 concepto de gasto con `<script>` dentro se ve como texto, que es lo que es.
+
+**El tema se aplica desde un script normal, no desde un módulo.** Los módulos van
+diferidos: si el tema se aplicara desde `src/ui/tema.js`, quien tiene el modo oscuro
+puesto vería un fogonazo blanco en cada arranque. La solución de siempre —cuatro líneas
+inline en el HTML— la prohíbe la CSP (`script-src 'self'`), así que va en
+`tema-inicial.js`, cargado desde el `<head>`.
+
+**En `data-tema` va el tema ya resuelto (`claro`/`oscuro`), no la preferencia.** Lo que
+se guarda en `localStorage` sí es la preferencia, que además puede ser «el del sistema».
+Resolverlo en JavaScript permite escribir la paleta oscura **una sola vez** en
+`tokens.css`; si el atributo llevara la preferencia harían falta dos bloques idénticos de
+tokens, uno para la elección manual y otro dentro de `@media (prefers-color-scheme)`.
 
 ## La pantalla de hipoteca
 

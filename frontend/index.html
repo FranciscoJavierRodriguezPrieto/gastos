@@ -8,9 +8,18 @@
   <title>Gastos</title>
   <meta name="description" content="Gestion financiera del hogar: gastos, cuentas e hipoteca.">
 
-  <!-- El tema es claro y se declara explicitamente para que iOS no invierta la paleta. -->
-  <meta name="color-scheme" content="light">
+  <!-- La aplicacion tiene tema claro y oscuro; se declaran los dos para que iOS no
+       aplique su propia inversion por encima. Cual se pinta lo decide `data-tema` en
+       <html>, que escribe tema-inicial.js justo debajo. -->
+  <meta name="color-scheme" content="light dark">
+  <!-- Valor de partida: el del tema claro. src/ui/tema.js lo ajusta al arrancar y en
+       cada cambio de tema, para que la barra del navegador vaya a juego. -->
   <meta name="theme-color" content="#b4c59d">
+
+  <!-- Antes que las hojas de estilo y sin `defer` a proposito: si el tema se aplicara
+       desde un modulo, quien tiene el modo oscuro puesto veria un fogonazo blanco en
+       cada arranque. -->
+  <script src="/tema-inicial.js"></script>
 
   <!-- Safari ignora buena parte del manifiesto, asi que la instalacion en iOS necesita
        ademas estas etiquetas. -->

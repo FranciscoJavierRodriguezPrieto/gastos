@@ -32,5 +32,14 @@
 /src/*
   Cache-Control: no-cache
 
+# Los dos scripts sueltos de la raíz, por el mismo motivo: config.js lleva la dirección
+# de la API —si se queda una versión vieja, la aplicación llama a donde no debe— y
+# tema-inicial.js decide con qué tema se pinta la primera pantalla.
+/config.js
+  Cache-Control: no-cache
+
+/tema-inicial.js
+  Cache-Control: no-cache
+
 /icons/*
   Cache-Control: public, max-age=604800

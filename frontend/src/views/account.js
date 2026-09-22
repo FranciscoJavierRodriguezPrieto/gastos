@@ -2,16 +2,22 @@ import { api, ApiError } from '../api/client.js';
 import { session } from '../api/session.js';
 import { PasskeyError, registrarPasskey, soportaPasskeys } from '../api/webauthn.js';
 import { tarjetaInvitacion } from './invitacion.js';
+import { alCambiarTema, fijarTema, preferenciaDeTema } from '../ui/tema.js';
 import { campo, cargando, el, error as bloqueError, tarjeta } from '../ui/dom.js';
 import { euros, fechaHora } from '../ui/format.js';
 
 /**
- * Tu cuenta: quién eres, quién más está en el hogar y cambiar la contraseña.
+ * Tu cuenta: quién eres, quién más está en el hogar, el aspecto y la contraseña.
  *
  * No es una pestaña principal porque no se usa a diario; se llega desde el pie de la
- * navegación.
+ * navegación en escritorio y desde la última pestaña en móvil.
+ *
+ * @param {object} opciones
+ * @param {Function} opciones.alSalir  cerrar sesión lo resuelve app.js, que es quien
+ *   sabe repintar el armazón; aquí sólo se ofrece el botón. Pasarlo como parámetro
+ *   evita que este módulo importe app.js, que a su vez importa éste.
  */
-export async function vistaCuenta(contenedor) {
+export async function vistaCuenta(contenedor, { alSalir } = {}) {
   const raiz = el('div', { class: 'vista' });
   contenedor.replaceChildren(raiz);
   raiz.replaceChildren(cabecera(), cargando());
@@ -23,15 +29,20 @@ export async function vistaCuenta(contenedor) {
     ]);
     session.setUser(yo);
 
-    raiz.replaceChildren(
+    // El filtro no es cosmético: `replaceChildren` convierte null en el texto «null» y
+    // lo pinta. Aquí hay dos tarjetas que pueden no estar —la de invitar, que sólo ve el
+    // titular, y la de cerrar sesión—, así que sin esto a tu pareja le salía un «null»
+    // suelto en mitad de la pantalla.
+    raiz.replaceChildren(...[
       cabecera(),
       datosPersonales(yo),
       listaMiembros(miembros, yo),
-      // Devuelve null si no eres el titular: sólo el OWNER puede invitar.
       tarjetaInvitacion(yo),
+      tarjetaAspecto(),
       tarjetaPasskeys(),
       formularioContrasena(),
-    );
+      alSalir ? tarjetaSesion(alSalir) : null,
+    ].filter(Boolean));
   } catch (e) {
     raiz.replaceChildren(cabecera(), bloqueError(
       e instanceof ApiError ? e.userMessage : 'No se pueden cargar tus datos'));
@@ -79,6 +90,78 @@ function listaMiembros(miembros, yo) {
     : null;
 
   return tarjeta('Miembros del hogar', [el('ul', { class: 'lista' }, filas), ayuda]);
+}
+
+const OPCIONES_DE_TEMA = [
+  { valor: 'sistema', etiqueta: 'El del sistema', icono: '◐' },
+  { valor: 'claro', etiqueta: 'Claro', icono: '☀' },
+  { valor: 'oscuro', etiqueta: 'Oscuro', icono: '☾' },
+];
+
+/**
+ * Aspecto: claro, oscuro o el del sistema.
+ *
+ * Son botones de radio de verdad, no botones normales con apariencia de elegidos. Con
+ * radios el teclado los recorre con las flechas, el lector de pantalla dice cuál está
+ * marcado y el navegador se encarga de que sólo haya uno: nada de eso sale gratis si se
+ * imita con <button> y una clase.
+ *
+ * «El del sistema» es el valor de partida y va el primero a propósito: si el teléfono
+ * está en modo noche, la aplicación ya sale oscura sin tocar nada.
+ */
+function tarjetaAspecto() {
+  const elegida = preferenciaDeTema();
+
+  const opciones = OPCIONES_DE_TEMA.map(({ valor, etiqueta, icono }) => {
+    const radio = el('input', {
+      type: 'radio',
+      name: 'tema',
+      id: `tema-${valor}`,
+      value: valor,
+      checked: valor === elegida,
+      onChange: () => fijarTema(valor),
+    });
+    return el('label', { class: 'opcion-tema', for: `tema-${valor}` }, [
+      radio,
+      el('span', { class: 'opcion-tema__icono', 'aria-hidden': 'true', text: icono }),
+      el('span', { text: etiqueta }),
+    ]);
+  });
+
+  const grupo = el('div', { class: 'opciones-tema', role: 'radiogroup',
+    'aria-label': 'Tema de la aplicación' }, opciones);
+
+  // El interruptor rápido de la navegación cambia el tema sin pasar por aquí; si esta
+  // pantalla está abierta, hay que mover la marca o enseñaría un valor que ya no es.
+  alCambiarTema(grupo, () => {
+    const actual = preferenciaDeTema();
+    for (const radio of grupo.querySelectorAll('input')) {
+      radio.checked = radio.value === actual;
+    }
+  });
+
+  return tarjeta('Aspecto', [
+    grupo,
+    el('p', { class: 'texto-apoyo', text:
+      'Se recuerda en este navegador, no en tu cuenta: puedes tener el móvil en oscuro y '
+      + 'el ordenador en claro.' }),
+  ]);
+}
+
+/**
+ * Cerrar sesión.
+ *
+ * En escritorio el botón está también en el pie de la navegación. Aquí hace falta
+ * porque en móvil esa barra no existe, y sin esto no había forma de salir desde el
+ * teléfono.
+ */
+function tarjetaSesion(alSalir) {
+  return tarjeta('Sesión', [
+    el('p', { class: 'texto-apoyo', text:
+      'Al salir se revoca la sesión en el servidor, no sólo en este navegador.' }),
+    el('button', { class: 'boton boton--sutil', type: 'button', onClick: alSalir },
+      'Cerrar sesión'),
+  ]);
 }
 
 /**
