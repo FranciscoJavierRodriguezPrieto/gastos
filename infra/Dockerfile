@@ -23,7 +23,7 @@ COPY backend backend
 RUN mvn -B -q clean package
 
 # ---------- Etapa de ejecución ----------
-FROM eclipse-temurin:21-jre-alpine@sha256:1a29e1fe337eb28b5bec30f0ee8ed29f0ff80ab6f75dcf9313efe82911065a52 AS runtime
+FROM eclipse-temurin:24-jre-alpine@sha256:4044b6c87cb088885bcd0220f7dc7a8a4aab76577605fa471945d2e98270741f AS runtime
 
 # Privilegio mínimo: el proceso nunca corre como root (CCN-STIC-812).
 RUN addgroup -S gastos && adduser -S gastos -G gastos
