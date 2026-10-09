@@ -149,6 +149,18 @@ ahí, así que no reaparece al recargar.
 
 `monthlyCommitments` del resumen es lo que alimenta `otherMonthlyDebts` del simulador.
 
+## Previsión de ahorro
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/savings-plan` | El plan del hogar. `204` si aún no hay ninguno. |
+| `PUT` | `/savings-plan` | Guarda el plan entero (personas, aportaciones, pagas extra, gastos personales con mes de fin, cuenta conjunta y gastos puntuales). |
+
+El servidor sólo valida y guarda: la previsión mes a mes la calcula el frontend
+(`frontend/src/views/prevision-calculo.js`), en céntimos, desde `startMonth` hasta el mes que se elija.
+Los meses van como `yyyy-MM`. Las listas tienen tope (6 personas, 20 gastos personales,
+50 puntuales) porque el plan se guarda como un único documento (API4).
+
 ## Cuentas
 
 | Método | Ruta | Descripción |

@@ -8,6 +8,7 @@ import { vistaHipoteca } from './views/mortgage.js';
 import { vistaCuenta } from './views/account.js';
 import { vistaLogin } from './views/login.js';
 import { vistaOlvide, vistaRestablecer } from './views/recover.js';
+import { vistaPrevision } from './views/prevision.js';
 import { vistaResumen } from './views/summary.js';
 import { vistaUnirse } from './views/unirse.js';
 
@@ -23,6 +24,7 @@ const SECCIONES = [
   { ruta: 'resumen', etiqueta: 'Resumen', icono: '◴', vista: vistaResumen },
   { ruta: 'gastos', etiqueta: 'Gastos', icono: '⌸', vista: vistaGastos },
   { ruta: 'cuentas', etiqueta: 'Cuentas', icono: '▤', vista: vistaCuentas },
+  { ruta: 'prevision', etiqueta: 'Previsión', icono: '↗', vista: vistaPrevision },
   { ruta: 'hipoteca', etiqueta: 'Hipoteca', icono: '⌂', vista: vistaHipoteca },
 ];
 
