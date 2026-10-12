@@ -5,7 +5,7 @@
 # versiones nuevas, asi que fijarlo no significa quedarse atras.
 
 # ---------- Etapa de construcción ----------
-FROM maven:3.9-eclipse-temurin-21@sha256:c2a2c58516d160f43b50f12baa427ca86989e0bc942609e04aff61da5d9a7d74 AS build
+FROM maven:3.9-eclipse-temurin-26@sha256:b2c1ad85954592f9928e84327c65201f308ad9b5d8ed7d5b823717c97bf23fbb AS build
 WORKDIR /build
 
 # Las dependencias se resuelven en una capa aparte para que un cambio de código
